@@ -629,45 +629,36 @@ export default function AdminDashboard() {
               </form>
             </div>
 
-            {/* Cards Grid with QR Codes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Cards Grid - Compact Design */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {cards.map((card) => (
-                <div key={card.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                  {/* Card Header */}
-                  <div className="p-5 border-b border-gray-100">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white">
-                        {card.card_id}
-                      </span>
-                      {card.required_subscriptions && card.required_subscriptions.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {card.required_subscriptions.map((sub) => (
-                            <span key={sub} className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                              {sub}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{card.title || 'Untitled'}</h3>
-                    <div className="flex items-center justify-between">
-                      <a
-                        href={card.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Watch
-                      </a>
-                      <div className="flex gap-1">
+                <div key={card.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  {/* Compact Header */}
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="inline-flex px-2 py-0.5 text-xs font-bold rounded bg-gray-900 text-white whitespace-nowrap">
+                          {card.card_id}
+                        </span>
+                        <h3 className="font-medium text-sm text-gray-900 truncate">{card.title || 'Untitled'}</h3>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <a
+                          href={card.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Watch video"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </a>
                         <button
                           onClick={() => startEditCard(card)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-                          title="Edit card"
+                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                          title="Edit"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -675,8 +666,8 @@ export default function AdminDashboard() {
                         </button>
                         <button
                           onClick={() => handleDeleteCard(card)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                          title="Delete card"
+                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          title="Delete"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -684,120 +675,108 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     </div>
+                    {card.required_subscriptions && card.required_subscriptions.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {card.required_subscriptions.map((sub) => (
+                          <span key={sub} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 text-green-700">
+                            {sub}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
-                  {/* QR Code Section */}
-                  <div className="p-5 bg-gray-50">
-                    {/* Access Link */}
-                    <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-2 font-medium">Access Link:</p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={getAccessUrl(card.card_id)}
-                          readOnly
-                          className="flex-1 px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-mono"
-                        />
-                        <button
-                          onClick={() => copyAccessLink(card.card_id)}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            copiedCardId === card.card_id
-                              ? 'bg-green-500 text-white'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
-                          title="Copy link"
-                        >
-                          {copiedCardId === card.card_id ? (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          )}
-                        </button>
+                  {/* Compact QR Section */}
+                  <div className="p-3 bg-gray-50">
+                    {loadingQr[card.card_id] ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                    </div>
-                    
-                    {/* QR Code */}
-                    <div className="text-center">
-                      {loadingQr[card.card_id] ? (
-                        <div className="flex flex-col items-center py-8">
-                          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                          <p className="text-sm text-gray-500">Loading QR...</p>
+                    ) : cardQrCodes[card.card_id] ? (
+                      <>
+                        {/* QR Code Display */}
+                        <div id={`qr-print-${card.card_id}`} className="bg-white rounded-lg p-3 mb-2">
+                          <img 
+                            src={cardQrCodes[card.card_id]} 
+                            alt={`QR ${card.card_id}`} 
+                            className="w-32 h-32 mx-auto"
+                          />
+                          <p className="text-[10px] text-gray-500 text-center mt-2 font-mono break-all">{getAccessUrl(card.card_id)}</p>
                         </div>
-                      ) : cardQrCodes[card.card_id] ? (
-                        <>
-                          {/* Printable QR Code Section */}
-                          <div id={`qr-print-${card.card_id}`} className="inline-block p-6 bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
-                            <div className="text-center mb-3">
-                              <h3 className="text-lg font-bold text-gray-900 mb-1">{card.title || card.card_id}</h3>
-                              <p className="text-sm text-gray-600">Scan to access video</p>
-                            </div>
-                            <img 
-                              src={cardQrCodes[card.card_id]} 
-                              alt={`QR Code for ${card.card_id}`} 
-                              className="w-48 h-48 mx-auto mb-4"
-                            />
-                            <div className="border-t border-gray-200 pt-3">
-                              <p className="text-xs text-gray-500 mb-1">Or type this URL:</p>
-                              <p className="text-sm font-mono text-gray-900 break-all">{getAccessUrl(card.card_id)}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col sm:flex-row gap-2 justify-center print:hidden">
-                            <button
-                              onClick={() => {
-                                const printContent = document.getElementById(`qr-print-${card.card_id}`);
-                                const originalContents = document.body.innerHTML;
-                                if (printContent) {
-                                  document.body.innerHTML = printContent.outerHTML;
-                                  window.print();
-                                  document.body.innerHTML = originalContents;
-                                  window.location.reload();
-                                }
-                              }}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        
+                        {/* Compact Action Buttons */}
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              const printContent = document.getElementById(`qr-print-${card.card_id}`);
+                              const originalContents = document.body.innerHTML;
+                              if (printContent) {
+                                document.body.innerHTML = printContent.outerHTML;
+                                window.print();
+                                document.body.innerHTML = originalContents;
+                                window.location.reload();
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
+                            title="Print QR"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Print
+                          </button>
+                          <a
+                            href={cardQrCodes[card.card_id]}
+                            download={`qr-${card.card_id}.png`}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-900 text-white text-xs font-medium rounded hover:bg-gray-800"
+                            title="Download"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Save
+                          </a>
+                          <button
+                            onClick={() => regenerateQrCode(card.card_id)}
+                            className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600"
+                            title="Regenerate"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => copyAccessLink(card.card_id)}
+                            className={`flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded transition-colors ${
+                              copiedCardId === card.card_id
+                                ? 'bg-green-500 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                            title="Copy link"
+                          >
+                            {copiedCardId === card.card_id ? (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                              Print QR
-                            </button>
-                            <a
-                              href={cardQrCodes[card.card_id]}
-                              download={`qr-${card.card_id}.png`}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                               </svg>
-                              Download
-                            </a>
-                            <button
-                              onClick={() => regenerateQrCode(card.card_id)}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                              </svg>
-                              Regenerate
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => loadQrCode(card.card_id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                          </svg>
-                          Generate QR Code
-                        </button>
-                      )}
-                    </div>
+                            )}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => loadQrCode(card.card_id)}
+                        className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-orange-500 text-white text-sm font-medium rounded hover:bg-orange-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        Generate QR
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
