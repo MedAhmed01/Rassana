@@ -52,6 +52,7 @@ export default function VideoAccessPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   // Fetch video data
   useEffect(() => {
@@ -266,6 +267,16 @@ export default function VideoAccessPage() {
       document.exitFullscreen();
     }
   }, []);
+
+  const copyLink = useCallback(() => {
+    const link = `${window.location.origin}/access/${cardId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }, [cardId]);
 
   if (loading) {
     return (

@@ -161,15 +161,20 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Check credential expiration
+    // Check credential expiration and session token
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
-      .select('role, expires_at')
+      .select('role, expires_at, session_token')
       .eq('user_id', session.user.id)
       .single();
 
     if (profileError || !profile) {
       return { valid: false, reason: 'profile_not_found' };
+    }
+
+    // Check if session token is null (user was force logged out)
+    if (!profile.session_token) {
+      return { valid: false, reason: 'logged_out' };
     }
 
     const expiresAt = new Date(profile.expires_at);

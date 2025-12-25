@@ -45,6 +45,7 @@ export default function AdminDashboard() {
   const [editCardForm, setEditCardForm] = useState({ video_url: '', title: '', subject: '' });
   const [cardQrCodes, setCardQrCodes] = useState<Record<string, string>>({});
   const [loadingQr, setLoadingQr] = useState<Record<string, boolean>>({});
+  const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
   
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
@@ -142,6 +143,22 @@ export default function AdminDashboard() {
       setError('Failed to regenerate QR code');
     } finally {
       setLoadingQr(prev => ({ ...prev, [cardId]: false }));
+    }
+  }
+  
+  function getAccessUrl(cardId: string): string {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}/access/${encodeURIComponent(cardId)}`;
+  }
+  
+  async function copyAccessLink(cardId: string) {
+    const url = getAccessUrl(cardId);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedCardId(cardId);
+      setTimeout(() => setCopiedCardId(null), 2000);
+    } catch (err) {
+      setError('Failed to copy link');
     }
   }
   
@@ -307,8 +324,17 @@ export default function AdminDashboard() {
   }
   
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (response.ok) {
+        // Force a hard redirect to clear all client state
+        window.location.href = '/login';
+      } else {
+        setError('Failed to logout');
+      }
+    } catch (err) {
+      setError('Logout failed');
+    }
   }
   
   if (loading) {
@@ -609,6 +635,39 @@ export default function AdminDashboard() {
                   
                   {/* QR Code Section */}
                   <div className="p-5 bg-gray-50">
+                    {/* Access Link */}
+                    <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-2 font-medium">Access Link:</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={getAccessUrl(card.card_id)}
+                          readOnly
+                          className="flex-1 px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-mono"
+                        />
+                        <button
+                          onClick={() => copyAccessLink(card.card_id)}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            copiedCardId === card.card_id
+                              ? 'bg-green-500 text-white'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                          title="Copy link"
+                        >
+                          {copiedCardId === card.card_id ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* QR Code */}
                     <div className="text-center">
                       {loadingQr[card.card_id] ? (
                         <div className="flex flex-col items-center py-8">
@@ -617,14 +676,42 @@ export default function AdminDashboard() {
                         </div>
                       ) : cardQrCodes[card.card_id] ? (
                         <>
-                          <div className="inline-block p-3 bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+                          {/* Printable QR Code Section */}
+                          <div id={`qr-print-${card.card_id}`} className="inline-block p-6 bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+                            <div className="text-center mb-3">
+                              <h3 className="text-lg font-bold text-gray-900 mb-1">{card.title || card.card_id}</h3>
+                              <p className="text-sm text-gray-600">Scan to access video</p>
+                            </div>
                             <img 
                               src={cardQrCodes[card.card_id]} 
                               alt={`QR Code for ${card.card_id}`} 
-                              className="w-32 h-32"
+                              className="w-48 h-48 mx-auto mb-4"
                             />
+                            <div className="border-t border-gray-200 pt-3">
+                              <p className="text-xs text-gray-500 mb-1">Or type this URL:</p>
+                              <p className="text-sm font-mono text-gray-900 break-all">{getAccessUrl(card.card_id)}</p>
+                            </div>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                          
+                          <div className="flex flex-col sm:flex-row gap-2 justify-center print:hidden">
+                            <button
+                              onClick={() => {
+                                const printContent = document.getElementById(`qr-print-${card.card_id}`);
+                                const originalContents = document.body.innerHTML;
+                                if (printContent) {
+                                  document.body.innerHTML = printContent.outerHTML;
+                                  window.print();
+                                  document.body.innerHTML = originalContents;
+                                  window.location.reload();
+                                }
+                              }}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                              Print QR
+                            </button>
                             <a
                               href={cardQrCodes[card.card_id]}
                               download={`qr-${card.card_id}.png`}

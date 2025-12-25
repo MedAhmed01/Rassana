@@ -177,24 +177,36 @@ export async function updateUserExpiration(
 
 
 /**
- * Force logout a user by clearing their session token (admin only)
+ * Force logout a user by clearing their session token and invalidating all Supabase sessions (admin only)
  * This allows the user to login again from any device
  */
 export async function forceLogoutUser(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const adminClient = createAdminClient();
     
-    const { error } = await adminClient
+    // Clear the session token in the database
+    const { error: updateError } = await adminClient
       .from('user_profiles')
       .update({ session_token: null })
       .eq('user_id', userId);
     
-    if (error) {
-      return { success: false, error: error.message };
+    if (updateError) {
+      console.error('Error clearing session token:', updateError);
+      return { success: false, error: updateError.message };
+    }
+    
+    // Sign out all sessions for this user using Supabase Admin API
+    // This invalidates all refresh tokens and forces re-authentication
+    const { error: signOutError } = await adminClient.auth.admin.signOut(userId, 'global');
+    
+    if (signOutError) {
+      console.error('Error signing out user sessions:', signOutError);
+      // Continue anyway since we cleared the session token
     }
     
     return { success: true };
   } catch (err) {
+    console.error('Force logout error:', err);
     return { success: false, error: 'Failed to logout user' };
   }
 }
