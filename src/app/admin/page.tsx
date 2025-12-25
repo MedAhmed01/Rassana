@@ -205,6 +205,21 @@ export default function AdminDashboard() {
     loadUsers();
   }
   
+  async function handleForceLogout(userId: string, username: string) {
+    if (!confirm(`Force logout "${username}"? This will allow them to login again.`)) return;
+    
+    setError('');
+    const response = await fetch(`/api/admin/users/${userId}`, { method: 'POST' });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      setError(data.error || 'Failed to logout user');
+      return;
+    }
+    
+    alert(`User "${username}" has been logged out.`);
+  }
+  
   function startEditUser(user: User) {
     setEditingUser(user);
     setEditForm({
@@ -459,6 +474,13 @@ export default function AdminDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">{new Date(user.created_at).toLocaleDateString()}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleForceLogout(user.id, user.username)}
+                              className="px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg"
+                              title="Force logout user"
+                            >
+                              Logout
+                            </button>
                             <button
                               onClick={() => startEditUser(user)}
                               className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"

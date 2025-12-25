@@ -174,3 +174,27 @@ export async function updateUserExpiration(
   
   return { success: true };
 }
+
+
+/**
+ * Force logout a user by clearing their session token (admin only)
+ * This allows the user to login again from any device
+ */
+export async function forceLogoutUser(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const adminClient = createAdminClient();
+    
+    const { error } = await adminClient
+      .from('user_profiles')
+      .update({ session_token: null })
+      .eq('user_id', userId);
+    
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Failed to logout user' };
+  }
+}

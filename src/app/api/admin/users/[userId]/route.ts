@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuth } from '@/middleware/auth';
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase';
+import { forceLogoutUser } from '@/services/users';
 
 export async function PATCH(
   request: NextRequest,
@@ -82,6 +83,35 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// Force logout a user (clear their session token)
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const auth = await checkAdminAuth();
+    if (auth.error) return auth.error;
+    
+    const { userId } = await params;
+    const result = await forceLogoutUser(userId);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error forcing logout:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
