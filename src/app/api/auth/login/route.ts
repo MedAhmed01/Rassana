@@ -26,10 +26,24 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    return NextResponse.json({
+    // Create response with session token cookie
+    const response = NextResponse.json({
       success: true,
       role: result.role,
     });
+    
+    // Set session token in cookie for single session enforcement
+    if (result.sessionToken) {
+      response.cookies.set('session_token', result.sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/',
+      });
+    }
+    
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

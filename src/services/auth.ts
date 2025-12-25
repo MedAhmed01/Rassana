@@ -1,5 +1,6 @@
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase';
 import type { AuthResult, SessionValidation, UserProfile } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Email domain used for username-based auth (Supabase requires email format)
 const EMAIL_DOMAIN = '@cardgame.local';
@@ -21,6 +22,7 @@ export function emailToUsername(email: string): string {
 /**
  * Authenticate a user with username and password
  * Checks credential expiration after successful auth
+ * Generates a new session token to invalidate other sessions
  */
 export async function authenticateUser(
   username: string,
@@ -28,6 +30,7 @@ export async function authenticateUser(
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
     const email = usernameToEmail(username);
     
     console.log('Attempting login with email:', email);
@@ -68,6 +71,17 @@ export async function authenticateUser(
       };
     }
 
+    // Generate new session token to invalidate other sessions
+    const newSessionToken = uuidv4();
+    const { error: updateError } = await adminClient
+      .from('user_profiles')
+      .update({ session_token: newSessionToken })
+      .eq('user_id', data.user.id);
+
+    if (updateError) {
+      console.error('Failed to update session token:', updateError);
+    }
+
     return {
       success: true,
       session: {
@@ -80,6 +94,7 @@ export async function authenticateUser(
         },
       },
       role: profile.role as 'admin' | 'student',
+      sessionToken: newSessionToken,
     };
   } catch (err) {
     console.error('Auth error:', err);
@@ -107,9 +122,10 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
 
 /**
  * Validate the current session and check credential expiration
+ * Also validates session token to enforce single session per user
  * Uses server-side Supabase client for proper cookie handling
  */
-export async function validateSession(): Promise<SessionValidation> {
+export async function validateSession(sessionToken?: string): Promise<SessionValidation> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const { data: { session }, error } = await serverSupabase.auth.getSession();
@@ -118,10 +134,10 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Check credential expiration
+    // Check credential expiration and session token
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
-      .select('role, expires_at')
+      .select('role, expires_at, session_token')
       .eq('user_id', session.user.id)
       .single();
 
@@ -134,9 +150,15 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'expired' };
     }
 
+    // Validate session token if provided (for single session enforcement)
+    if (sessionToken && profile.session_token && sessionToken !== profile.session_token) {
+      return { valid: false, reason: 'session_invalidated' };
+    }
+
     return {
       valid: true,
       role: profile.role as 'admin' | 'student',
+      sessionToken: profile.session_token,
     };
   } catch (err) {
     return { valid: false, reason: 'error' };

@@ -45,6 +45,7 @@ export interface AuthResult {
   session?: Session;
   role?: 'admin' | 'student';
   error?: string;
+  sessionToken?: string;
 }
 
 // Request to create a new card
@@ -92,4 +93,5 @@ export interface SessionValidation {
   valid: boolean;
   role?: 'admin' | 'student';
   reason?: string;
+  sessionToken?: string;
 }
