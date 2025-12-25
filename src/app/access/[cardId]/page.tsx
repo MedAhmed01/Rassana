@@ -326,7 +326,6 @@ export default function VideoAccessPage() {
             className={`relative bg-black overflow-hidden ${isFullscreen ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
             style={isFullscreen ? { height: '100vh' } : { paddingBottom: '56.25%' }}
             onMouseMove={() => setShowControls(true)}
-            onDoubleClick={toggleFullscreen}
           >
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
