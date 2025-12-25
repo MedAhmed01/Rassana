@@ -23,6 +23,7 @@ export function emailToUsername(email: string): string {
  * Authenticate a user with username and password
  * Checks credential expiration after successful auth
  * Blocks login if user already has an active session (prevents account sharing)
+ * Note: Admins can login from multiple devices, students are restricted to one session
  */
 export async function authenticateUser(
   username: string,
@@ -35,14 +36,15 @@ export async function authenticateUser(
     
     console.log('Attempting login with email:', email);
     
-    // First check if user already has an active session
+    // First get the user's role to check if they're an admin
     const { data: existingProfile } = await adminClient
       .from('user_profiles')
-      .select('session_token, user_id')
+      .select('session_token, user_id, role')
       .eq('username', username)
       .single();
     
-    if (existingProfile?.session_token) {
+    // Only check for existing session if user is a student (not admin)
+    if (existingProfile?.session_token && existingProfile?.role === 'student') {
       return { 
         success: false, 
         error: 'This account is already logged in on another device. Please logout first.' 
