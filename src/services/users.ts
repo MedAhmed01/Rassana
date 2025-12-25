@@ -8,7 +8,7 @@ import type { CreateUserResult, UserCredentials, UserProfile } from '@/types';
  */
 export async function createUser(credentials: UserCredentials): Promise<CreateUserResult> {
   try {
-    const { username, password, role, expires_at } = credentials;
+    const { username, password, role, subscriptions, expires_at } = credentials;
     
     // Validate required fields
     if (!username || username.trim().length === 0) {
@@ -63,6 +63,7 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
         user_id: authData.user.id,
         username,
         role,
+        subscriptions: subscriptions || [],
         expires_at,
       });
     

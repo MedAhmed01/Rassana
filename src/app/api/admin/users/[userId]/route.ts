@@ -13,14 +13,15 @@ export async function PATCH(
     
     const { userId } = await params;
     const body = await request.json();
-    const { username, password, role, expires_at } = body;
+    const { username, password, role, subscriptions, expires_at } = body;
     
     const supabase = await createServerSupabaseClient();
     
     // Update user profile
-    const updates: Record<string, string> = {};
+    const updates: Record<string, any> = {};
     if (username) updates.username = username;
     if (role) updates.role = role;
+    if (subscriptions !== undefined) updates.subscriptions = subscriptions;
     if (expires_at) updates.expires_at = new Date(expires_at).toISOString();
     
     const { error: profileError } = await supabase

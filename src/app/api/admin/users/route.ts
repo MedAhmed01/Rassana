@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (auth.error) return auth.error;
     
     const body = await request.json();
-    const { username, password, role, expires_at } = body;
+    const { username, password, role, subscriptions, expires_at } = body;
     
     if (!username || !password || !role || !expires_at) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       username,
       password,
       role,
+      subscriptions: subscriptions || [],
       expires_at: new Date(expires_at).toISOString(),
     });
     

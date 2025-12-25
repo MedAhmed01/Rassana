@@ -7,6 +7,7 @@ interface User {
   id: string;
   username: string;
   role: 'admin' | 'student';
+  subscriptions?: string[];
   expires_at: string;
   created_at: string;
 }
@@ -16,7 +17,8 @@ interface Card {
   card_id: string;
   video_url: string;
   title?: string;
-  subject?: 'physics' | 'math';
+  subject?: string;
+  required_subscriptions?: string[];
 }
 
 interface AccessLog {
@@ -35,20 +37,29 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   
   const [users, setUsers] = useState<User[]>([]);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'student', expires_at: '' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ username: '', password: '', role: 'student', expires_at: '' });
+  const [editForm, setEditForm] = useState({ username: '', password: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
   
   const [cards, setCards] = useState<Card[]>([]);
-  const [newCard, setNewCard] = useState({ card_id: '', video_url: '', title: '', subject: '' });
+  const [newCard, setNewCard] = useState({ card_id: '', video_url: '', title: '', subject: '', required_subscriptions: [] as string[] });
   const [editingCard, setEditingCard] = useState<Card | null>(null);
-  const [editCardForm, setEditCardForm] = useState({ video_url: '', title: '', subject: '' });
+  const [editCardForm, setEditCardForm] = useState({ video_url: '', title: '', subject: '', required_subscriptions: [] as string[] });
   const [cardQrCodes, setCardQrCodes] = useState<Record<string, string>>({});
   const [loadingQr, setLoadingQr] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
   
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
+  
+  const availableSubscriptions = ['math', 'physics', 'science'];
+  
+  function toggleSubscription(current: string[], subscription: string): string[] {
+    if (current.includes(subscription)) {
+      return current.filter(s => s !== subscription);
+    }
+    return [...current, subscription];
+  }
   
   useEffect(() => {
     checkAuth();
@@ -179,7 +190,7 @@ export default function AdminDashboard() {
       return;
     }
     
-    setNewUser({ username: '', password: '', role: 'student', expires_at: '' });
+    setNewUser({ username: '', password: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
   
@@ -203,7 +214,7 @@ export default function AdminDashboard() {
     }
     
     setEditingUser(null);
-    setEditForm({ username: '', password: '', role: 'student', expires_at: '' });
+    setEditForm({ username: '', password: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
   
@@ -222,27 +233,13 @@ export default function AdminDashboard() {
     loadUsers();
   }
   
-  async function handleForceLogout(userId: string, username: string) {
-    if (!confirm(`Force logout "${username}"? This will allow them to login again.`)) return;
-    
-    setError('');
-    const response = await fetch(`/api/admin/users/${userId}`, { method: 'POST' });
-    
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Failed to logout user');
-      return;
-    }
-    
-    alert(`User "${username}" has been logged out.`);
-  }
-  
   function startEditUser(user: User) {
     setEditingUser(user);
     setEditForm({
       username: user.username,
       password: '',
       role: user.role,
+      subscriptions: user.subscriptions || [],
       expires_at: new Date(user.expires_at).toISOString().split('T')[0],
     });
   }
@@ -264,7 +261,7 @@ export default function AdminDashboard() {
       return;
     }
     
-    setNewCard({ card_id: '', video_url: '', title: '', subject: '' });
+    setNewCard({ card_id: '', video_url: '', title: '', subject: '', required_subscriptions: [] });
     loadCards();
   }
   
@@ -274,6 +271,7 @@ export default function AdminDashboard() {
       video_url: card.video_url,
       title: card.title || '',
       subject: card.subject || '',
+      required_subscriptions: card.required_subscriptions || [],
     });
   }
   
@@ -297,7 +295,7 @@ export default function AdminDashboard() {
     }
     
     setEditingCard(null);
-    setEditCardForm({ video_url: '', title: '', subject: '' });
+    setEditCardForm({ video_url: '', title: '', subject: '', required_subscriptions: [] });
     loadCards();
   }
   
@@ -431,41 +429,66 @@ export default function AdminDashboard() {
             {/* Create User Form */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Create New User</h2>
-              <form onSubmit={handleCreateUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  required
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  required
-                />
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                >
-                  <option value="student">Student</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <input
-                  type="date"
-                  value={newUser.expires_at}
-                  onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  required
-                />
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                    required
+                  />
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  >
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <input
+                    type="date"
+                    value={newUser.expires_at}
+                    onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                    required
+                  />
+                </div>
+                
+                {newUser.role === 'student' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Subscriptions</label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSubscriptions.map((sub) => (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            newUser.subscriptions.includes(sub)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <button
                   type="submit"
-                  className="py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
+                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
                 >
                   Create User
                 </button>
@@ -480,6 +503,7 @@ export default function AdminDashboard() {
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Username</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Subscriptions</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Expires</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Created</th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -496,17 +520,25 @@ export default function AdminDashboard() {
                             {user.role}
                           </span>
                         </td>
+                        <td className="px-6 py-4 hidden lg:table-cell">
+                          {user.role === 'student' && user.subscriptions && user.subscriptions.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.subscriptions.map((sub) => (
+                                <span key={sub} className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
+                                  {sub}
+                                </span>
+                              ))}
+                            </div>
+                          ) : user.role === 'student' ? (
+                            <span className="text-sm text-gray-400">No subscriptions</span>
+                          ) : (
+                            <span className="text-sm text-gray-400">N/A</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell">{new Date(user.expires_at).toLocaleDateString()}</td>
                         <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">{new Date(user.created_at).toLocaleDateString()}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => handleForceLogout(user.id, user.username)}
-                              className="px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg"
-                              title="Force logout user"
-                            >
-                              Logout
-                            </button>
                             <button
                               onClick={() => startEditUser(user)}
                               className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -536,42 +568,57 @@ export default function AdminDashboard() {
             {/* Create Card Form */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Add New Card</h2>
-              <form onSubmit={handleCreateCard} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <input
-                  type="text"
-                  placeholder="Card ID (e.g., PHY-001)"
-                  value={newCard.card_id}
-                  onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  required
-                />
-                <input
-                  type="url"
-                  placeholder="YouTube URL"
-                  value={newCard.video_url}
-                  onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Title (optional)"
-                  value={newCard.title}
-                  onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                />
-                <select
-                  value={newCard.subject}
-                  onChange={(e) => setNewCard({ ...newCard, subject: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                >
-                  <option value="">Select Subject</option>
-                  <option value="physics">Physics</option>
-                  <option value="math">Math</option>
-                </select>
+              <form onSubmit={handleCreateCard} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Card ID (e.g., PHY-001)"
+                    value={newCard.card_id}
+                    onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                    required
+                  />
+                  <input
+                    type="url"
+                    placeholder="YouTube URL"
+                    value={newCard.video_url}
+                    onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Title (optional)"
+                    value={newCard.title}
+                    onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Required Subscriptions (students must have at least one)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSubscriptions.map((sub) => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          newCard.required_subscriptions.includes(sub)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Leave empty to allow all students to access this card</p>
+                </div>
+                
                 <button
                   type="submit"
-                  className="py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
+                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
                 >
                   Add Card
                 </button>
@@ -588,12 +635,14 @@ export default function AdminDashboard() {
                       <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white">
                         {card.card_id}
                       </span>
-                      {card.subject && (
-                        <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${
-                          card.subject === 'physics' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {card.subject}
-                        </span>
+                      {card.required_subscriptions && card.required_subscriptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {card.required_subscriptions.map((sub) => (
+                            <span key={sub} className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                              {sub}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">{card.title || 'Untitled'}</h3>
@@ -882,6 +931,27 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
+              {editForm.role === 'student' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subscriptions</label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSubscriptions.map((sub) => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          editForm.subscriptions.includes(sub)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
@@ -940,16 +1010,34 @@ export default function AdminDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subject (optional)</label>
+                <input
+                  type="text"
                   value={editCardForm.subject}
                   onChange={(e) => setEditCardForm({ ...editCardForm, subject: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                >
-                  <option value="">No subject</option>
-                  <option value="physics">Physics</option>
-                  <option value="math">Math</option>
-                </select>
+                  placeholder="e.g., Physics, Math"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Required Subscriptions</label>
+                <div className="flex flex-wrap gap-2">
+                  {availableSubscriptions.map((sub) => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        editCardForm.required_subscriptions.includes(sub)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Leave empty to allow all students</p>
               </div>
               <div className="flex gap-3 pt-4">
                 <button

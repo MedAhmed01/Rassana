@@ -14,9 +14,9 @@ export async function PATCH(
   try {
     const { cardId } = await params;
     const body = await request.json();
-    const { video_url, title, subject } = body;
+    const { video_url, title, subject, required_subscriptions } = body;
 
-    const result = await updateCard(cardId, { video_url, title, subject });
+    const result = await updateCard(cardId, { video_url, title, subject, required_subscriptions });
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

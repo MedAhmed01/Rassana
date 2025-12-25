@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (auth.error) return auth.error;
     
     const body = await request.json();
-    const { card_id, video_url, title, subject } = body;
+    const { card_id, video_url, title, subject, required_subscriptions } = body;
     
     if (!card_id || !video_url) {
       return NextResponse.json(
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       video_url,
       title,
       subject,
+      required_subscriptions: required_subscriptions || [],
     });
     
     if (!result.success) {

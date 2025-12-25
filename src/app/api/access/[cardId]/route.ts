@@ -26,9 +26,9 @@ export async function GET(
     
     // Log the access
     const supabase = await createServerSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
-      await logVideoAccess(session.user.id, cardId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      await logVideoAccess(user.id, cardId);
     }
     
     return NextResponse.json({ 

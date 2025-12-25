@@ -1,10 +1,14 @@
+// Subscription types
+export type Subscription = 'math' | 'physics' | 'science';
+
 // Card type - Maps card identifiers to YouTube video URLs
 export interface Card {
   id: string;
   card_id: string;
   video_url: string;
   title?: string;
-  subject?: 'physics' | 'math';
+  subject?: string;
+  required_subscriptions?: Subscription[];
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +19,7 @@ export interface UserProfile {
   user_id: string;
   username: string;
   role: 'admin' | 'student';
+  subscriptions?: Subscription[];
   expires_at: string;
   created_at: string;
   updated_at: string;
@@ -25,6 +30,7 @@ export interface UserCredentials {
   username: string;
   password: string;
   role: 'admin' | 'student';
+  subscriptions?: Subscription[];
   expires_at: string;
 }
 
@@ -53,7 +59,8 @@ export interface CardCreateRequest {
   card_id: string;
   video_url: string;
   title?: string;
-  subject?: 'physics' | 'math';
+  subject?: string;
+  required_subscriptions?: Subscription[];
 }
 
 // Access log entry

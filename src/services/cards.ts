@@ -18,7 +18,7 @@ export function isValidYouTubeUrl(url: string): boolean {
  */
 export async function insertCard(request: CardCreateRequest): Promise<CardResult> {
   try {
-    const { card_id, video_url, title, subject } = request;
+    const { card_id, video_url, title, subject, required_subscriptions } = request;
     
     // Validate required fields
     if (!card_id || card_id.trim().length === 0) {
@@ -41,6 +41,7 @@ export async function insertCard(request: CardCreateRequest): Promise<CardResult
         video_url,
         title: title || null,
         subject: subject || null,
+        required_subscriptions: required_subscriptions || [],
       })
       .select()
       .single();
@@ -63,17 +64,18 @@ export async function insertCard(request: CardCreateRequest): Promise<CardResult
  */
 export async function updateCard(
   id: string,
-  updates: { video_url?: string; title?: string; subject?: string }
+  updates: { video_url?: string; title?: string; subject?: string; required_subscriptions?: string[] }
 ): Promise<CardResult> {
   try {
     if (updates.video_url && !isValidYouTubeUrl(updates.video_url)) {
       return { success: false, error: 'Please provide a valid YouTube URL' };
     }
     
-    const updateData: Record<string, string | null> = {};
+    const updateData: Record<string, any> = {};
     if (updates.video_url) updateData.video_url = updates.video_url;
     if (updates.title !== undefined) updateData.title = updates.title || null;
     if (updates.subject !== undefined) updateData.subject = updates.subject || null;
+    if (updates.required_subscriptions !== undefined) updateData.required_subscriptions = updates.required_subscriptions;
     
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase

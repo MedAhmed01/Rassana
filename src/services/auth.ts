@@ -22,8 +22,6 @@ export function emailToUsername(email: string): string {
 /**
  * Authenticate a user with username and password
  * Checks credential expiration after successful auth
- * Blocks login if user already has an active session (prevents account sharing)
- * Note: Admins can login from multiple devices, students are restricted to one session
  */
 export async function authenticateUser(
   username: string,
@@ -31,25 +29,7 @@ export async function authenticateUser(
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
-    const adminClient = createAdminClient();
     const email = usernameToEmail(username);
-    
-    console.log('Attempting login with email:', email);
-    
-    // First get the user's role to check if they're an admin
-    const { data: existingProfile } = await adminClient
-      .from('user_profiles')
-      .select('session_token, user_id, role')
-      .eq('username', username)
-      .single();
-    
-    // Only check for existing session if user is a student (not admin)
-    if (existingProfile?.session_token && existingProfile?.role === 'student') {
-      return { 
-        success: false, 
-        error: 'This account is already logged in on another device. Please logout first.' 
-      };
-    }
     
     const { data, error } = await serverSupabase.auth.signInWithPassword({
       email,
@@ -57,7 +37,6 @@ export async function authenticateUser(
     });
 
     if (error) {
-      console.log('Supabase auth error:', error.message, error.status);
       return { success: false, error: 'Invalid username or password' };
     }
 
@@ -87,35 +66,6 @@ export async function authenticateUser(
       };
     }
 
-    // Generate new session token to mark user as logged in
-    const newSessionToken = uuidv4();
-    const loginAt = new Date().toISOString();
-    
-    // Try to update with last_login_at, fall back to just session_token if column doesn't exist
-    let updateError = null;
-    const updateResult = await adminClient
-      .from('user_profiles')
-      .update({ 
-        session_token: newSessionToken,
-        last_login_at: loginAt
-      })
-      .eq('user_id', data.user.id);
-    
-    updateError = updateResult.error;
-    
-    // If last_login_at column doesn't exist, try without it
-    if (updateError && updateError.message?.includes('column')) {
-      const fallbackResult = await adminClient
-        .from('user_profiles')
-        .update({ session_token: newSessionToken })
-        .eq('user_id', data.user.id);
-      updateError = fallbackResult.error;
-    }
-
-    if (updateError) {
-      console.error('Failed to update session token:', updateError);
-    }
-
     return {
       success: true,
       session: {
@@ -128,7 +78,6 @@ export async function authenticateUser(
         },
       },
       role: profile.role as 'admin' | 'student',
-      sessionToken: newSessionToken,
     };
   } catch (err) {
     console.error('Auth error:', err);
@@ -137,25 +86,11 @@ export async function authenticateUser(
 }
 
 /**
- * Log out the current user and invalidate their session
- * Clears the session token to allow login from other devices
+ * Log out the current user
  */
 export async function logout(): Promise<{ success: boolean; error?: string }> {
   try {
     const serverSupabase = await createServerSupabaseClient();
-    const adminClient = createAdminClient();
-    
-    // Get current user to clear their session token
-    const { data: { session } } = await serverSupabase.auth.getSession();
-    
-    if (session?.user?.id) {
-      // Clear session token to allow new logins
-      await adminClient
-        .from('user_profiles')
-        .update({ session_token: null })
-        .eq('user_id', session.user.id);
-    }
-    
     const { error } = await serverSupabase.auth.signOut();
     
     if (error) {
@@ -175,41 +110,21 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
 export async function validateSession(): Promise<SessionValidation> {
   try {
     const serverSupabase = await createServerSupabaseClient();
-    const { data: { session }, error } = await serverSupabase.auth.getSession();
+    const { data: { user }, error } = await serverSupabase.auth.getUser();
 
-    if (error || !session) {
+    if (error || !user) {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Check credential expiration and session token
-    // Try to get new columns, but don't fail if they don't exist
+    // Check credential expiration
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
-      .select('role, expires_at, session_token, force_logout_at, last_login_at')
-      .eq('user_id', session.user.id)
+      .select('role, expires_at')
+      .eq('user_id', user.id)
       .single();
 
     if (profileError || !profile) {
       return { valid: false, reason: 'profile_not_found' };
-    }
-
-    // Check if session token is null (user was force logged out)
-    if (!profile.session_token) {
-      // Force sign out on the server to clear cookies
-      await serverSupabase.auth.signOut();
-      return { valid: false, reason: 'logged_out' };
-    }
-
-    // Check if user was force-logged out after their last login (only if columns exist)
-    if (profile.force_logout_at && profile.last_login_at) {
-      const forceLogoutTime = new Date(profile.force_logout_at);
-      const lastLoginTime = new Date(profile.last_login_at);
-      
-      if (forceLogoutTime > lastLoginTime) {
-        // User was force-logged out after they logged in
-        await serverSupabase.auth.signOut();
-        return { valid: false, reason: 'logged_out' };
-      }
     }
 
     const expiresAt = new Date(profile.expires_at);
@@ -235,16 +150,16 @@ export async function validateSession(): Promise<SessionValidation> {
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
     const serverSupabase = await createServerSupabaseClient();
-    const { data: { session } } = await serverSupabase.auth.getSession();
+    const { data: { user } } = await serverSupabase.auth.getUser();
     
-    if (!session) {
+    if (!user) {
       return null;
     }
 
     const { data: profile, error } = await serverSupabase
       .from('user_profiles')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error || !profile) {
