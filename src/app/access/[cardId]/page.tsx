@@ -170,7 +170,7 @@ export default function VideoAccessPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Prevent right-click and keyboard shortcuts
+  // Keyboard shortcuts
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -178,12 +178,10 @@ export default function VideoAccessPage() {
           (e.ctrlKey && e.shiftKey && e.key === 'i') || e.key === 'F12') {
         e.preventDefault();
       }
-      // Space to play/pause
       if (e.key === ' ' && playerReady) {
         e.preventDefault();
         togglePlay();
       }
-      // Arrow keys for seeking
       if (e.key === 'ArrowLeft' && playerReady) {
         e.preventDefault();
         skipBackward();
@@ -325,30 +323,67 @@ export default function VideoAccessPage() {
           
           <div 
             ref={containerRef}
-            className={`relative bg-black overflow-hidden cursor-pointer ${isFullscreen ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
+            className={`relative bg-black overflow-hidden ${isFullscreen ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
             style={isFullscreen ? { height: '100vh' } : { paddingBottom: '56.25%' }}
-            onClick={togglePlay}
             onMouseMove={() => setShowControls(true)}
             onDoubleClick={toggleFullscreen}
           >
             {/* YouTube Player (hidden controls) */}
-            <div id="youtube-player" className={`absolute inset-0 w-full h-full pointer-events-none ${isFullscreen ? '' : ''}`} />
+            <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
             {/* Overlay to block all YouTube UI */}
             <div className="absolute inset-0 z-10" />
             
-            {/* Play/Pause overlay */}
-            {!isPlaying && playerReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/30">
-                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                  <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-              </div>
-            )}
+            {/* Center Controls - Skip Back, Play/Pause, Skip Forward */}
+            <div className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="flex items-center gap-6 sm:gap-10">
+                {/* Skip Backward 10s */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); skipBackward(); }}
+                  className="w-12 h-12 sm:w-16 sm:h-16 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
+                  title="Reculer 10s"
+                >
+                  <div className="relative">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs font-bold mt-0.5">10</span>
+                  </div>
+                </button>
 
-            {/* Custom Controls */}
+                {/* Play/Pause */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                  className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-110"
+                >
+                  {isPlaying ? (
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  )}
+                </button>
+
+                {/* Skip Forward 10s */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); skipForward(); }}
+                  className="w-12 h-12 sm:w-16 sm:h-16 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
+                  title="Avancer 10s"
+                >
+                  <div className="relative">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs font-bold mt-0.5">10</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Controls */}
             <div className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
               <div className="bg-gradient-to-t from-black/90 to-transparent pt-10 pb-4 px-4">
                 {/* Progress bar */}
@@ -365,31 +400,6 @@ export default function VideoAccessPage() {
                 {/* Controls row */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {/* Play/Pause */}
-                    <button onClick={(e) => { e.stopPropagation(); togglePlay(); }} className="text-white hover:text-blue-400 p-1">
-                      {isPlaying ? (
-                        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                      ) : (
-                        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                      )}
-                    </button>
-
-                    {/* Skip backward 10s */}
-                    <button onClick={(e) => { e.stopPropagation(); skipBackward(); }} className="text-white hover:text-blue-400 p-1" title="Reculer 10s">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                        <text x="9" y="15" fontSize="7" fill="currentColor" fontWeight="bold">10</text>
-                      </svg>
-                    </button>
-
-                    {/* Skip forward 10s */}
-                    <button onClick={(e) => { e.stopPropagation(); skipForward(); }} className="text-white hover:text-blue-400 p-1" title="Avancer 10s">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-                        <text x="9" y="15" fontSize="7" fill="currentColor" fontWeight="bold">10</text>
-                      </svg>
-                    </button>
-                    
                     {/* Volume */}
                     <div className="flex items-center gap-2 group">
                       <button onClick={(e) => { e.stopPropagation(); toggleMute(); }} className="text-white hover:text-blue-400 p-1">
