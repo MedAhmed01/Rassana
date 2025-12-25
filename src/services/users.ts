@@ -186,13 +186,27 @@ export async function forceLogoutUser(userId: string): Promise<{ success: boolea
     
     // Set force_logout_at timestamp and clear session token
     const forceLogoutAt = new Date().toISOString();
-    const { error: updateError } = await adminClient
+    
+    // Try to update with force_logout_at, fall back to just session_token if column doesn't exist
+    let updateError = null;
+    const updateResult = await adminClient
       .from('user_profiles')
       .update({ 
         session_token: null,
         force_logout_at: forceLogoutAt
       })
       .eq('user_id', userId);
+    
+    updateError = updateResult.error;
+    
+    // If force_logout_at column doesn't exist, try without it
+    if (updateError && updateError.message?.includes('column')) {
+      const fallbackResult = await adminClient
+        .from('user_profiles')
+        .update({ session_token: null })
+        .eq('user_id', userId);
+      updateError = fallbackResult.error;
+    }
     
     if (updateError) {
       console.error('Error clearing session token:', updateError);

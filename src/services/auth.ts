@@ -88,13 +88,27 @@ export async function authenticateUser(
     // Generate new session token to mark user as logged in
     const newSessionToken = uuidv4();
     const loginAt = new Date().toISOString();
-    const { error: updateError } = await adminClient
+    
+    // Try to update with last_login_at, fall back to just session_token if column doesn't exist
+    let updateError = null;
+    const updateResult = await adminClient
       .from('user_profiles')
       .update({ 
         session_token: newSessionToken,
         last_login_at: loginAt
       })
       .eq('user_id', data.user.id);
+    
+    updateError = updateResult.error;
+    
+    // If last_login_at column doesn't exist, try without it
+    if (updateError && updateError.message?.includes('column')) {
+      const fallbackResult = await adminClient
+        .from('user_profiles')
+        .update({ session_token: newSessionToken })
+        .eq('user_id', data.user.id);
+      updateError = fallbackResult.error;
+    }
 
     if (updateError) {
       console.error('Failed to update session token:', updateError);
@@ -166,6 +180,7 @@ export async function validateSession(): Promise<SessionValidation> {
     }
 
     // Check credential expiration and session token
+    // Try to get new columns, but don't fail if they don't exist
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
       .select('role, expires_at, session_token, force_logout_at, last_login_at')
@@ -183,7 +198,7 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'logged_out' };
     }
 
-    // Check if user was force-logged out after their last login
+    // Check if user was force-logged out after their last login (only if columns exist)
     if (profile.force_logout_at && profile.last_login_at) {
       const forceLogoutTime = new Date(profile.force_logout_at);
       const lastLoginTime = new Date(profile.last_login_at);
@@ -207,6 +222,7 @@ export async function validateSession(): Promise<SessionValidation> {
       role: profile.role as 'admin' | 'student',
     };
   } catch (err) {
+    console.error('Session validation error:', err);
     return { valid: false, reason: 'error' };
   }
 }
