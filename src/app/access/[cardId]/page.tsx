@@ -137,12 +137,15 @@ export default function VideoAccessPage() {
         },
         events: {
           onReady: (event: any) => {
+            console.log('YouTube player ready');
             setPlayerReady(true);
             setDuration(event.target.getDuration());
             setVolume(event.target.getVolume());
           },
           onStateChange: (event: any) => {
-            setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+            const playing = event.data === window.YT.PlayerState.PLAYING;
+            console.log('Player state changed:', event.data, 'Playing:', playing);
+            setIsPlaying(playing);
           },
         },
       });
@@ -222,13 +225,36 @@ export default function VideoAccessPage() {
   }, [playerReady]);
 
   const togglePlay = useCallback(() => {
-    if (!playerRef.current) return;
-    if (isPlaying) {
-      playerRef.current.pauseVideo();
-    } else {
-      playerRef.current.playVideo();
+    if (!playerRef.current) {
+      console.log('Player not initialized');
+      return;
     }
-  }, [isPlaying]);
+    
+    if (!playerReady) {
+      console.log('Player not ready yet');
+      return;
+    }
+    
+    try {
+      const playerState = playerRef.current.getPlayerState();
+      console.log('Current player state:', playerState);
+      
+      // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+      if (playerState === 1) {
+        // Currently playing, so pause
+        console.log('Pausing video');
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        // Not playing, so play
+        console.log('Playing video');
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error('Error toggling play:', error);
+    }
+  }, [playerReady]);
 
   const skipForward = useCallback(() => {
     if (!playerRef.current || !duration) return;
@@ -390,8 +416,13 @@ export default function VideoAccessPage() {
                 {/* Skip Backward 10s */}
                 <button 
                   onClick={skipBackward}
-                  className="w-12 h-12 sm:w-14 sm:h-14 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 active:scale-90 cursor-pointer"
-                  title="Reculer 10s"
+                  disabled={!playerReady}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white transition-all ${
+                    playerReady
+                      ? 'bg-black/60 hover:bg-black/80 hover:scale-105 active:scale-90 cursor-pointer'
+                      : 'bg-black/30 cursor-not-allowed opacity-50'
+                  }`}
+                  title={playerReady ? "Reculer 10s" : "Loading..."}
                 >
                   <div className="relative">
                     <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -404,9 +435,20 @@ export default function VideoAccessPage() {
                 {/* Play/Pause */}
                 <button 
                   onClick={togglePlay}
-                  className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-600/40 transition-all hover:scale-105 active:scale-90 cursor-pointer"
+                  disabled={!playerReady}
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
+                    playerReady 
+                      ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/40 hover:scale-105 active:scale-90 cursor-pointer' 
+                      : 'bg-gray-600 cursor-not-allowed opacity-50'
+                  }`}
+                  title={playerReady ? (isPlaying ? 'Pause' : 'Play') : 'Loading...'}
                 >
-                  {isPlaying ? (
+                  {!playerReady ? (
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : isPlaying ? (
                     <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
                     </svg>
@@ -420,8 +462,13 @@ export default function VideoAccessPage() {
                 {/* Skip Forward 10s */}
                 <button 
                   onClick={skipForward}
-                  className="w-12 h-12 sm:w-14 sm:h-14 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 active:scale-90 cursor-pointer"
-                  title="Avancer 10s"
+                  disabled={!playerReady}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white transition-all ${
+                    playerReady
+                      ? 'bg-black/60 hover:bg-black/80 hover:scale-105 active:scale-90 cursor-pointer'
+                      : 'bg-black/30 cursor-not-allowed opacity-50'
+                  }`}
+                  title={playerReady ? "Avancer 10s" : "Loading..."}
                 >
                   <div className="relative">
                     <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 24 24">
