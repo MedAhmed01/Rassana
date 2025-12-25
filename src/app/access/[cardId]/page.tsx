@@ -335,33 +335,36 @@ export default function VideoAccessPage() {
             <div className="absolute inset-0 z-10" />
             
             {/* Center Controls - Skip Back, Play/Pause, Skip Forward */}
-            <div className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="flex items-center gap-6 sm:gap-10">
+            <div 
+              className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
+              onClick={togglePlay}
+            >
+              <div className="flex items-center gap-4 sm:gap-8" onClick={(e) => e.stopPropagation()}>
                 {/* Skip Backward 10s */}
                 <button 
-                  onClick={(e) => { e.stopPropagation(); skipBackward(); }}
-                  className="w-12 h-12 sm:w-16 sm:h-16 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
+                  onClick={skipBackward}
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95"
                   title="Reculer 10s"
                 >
                   <div className="relative">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs font-bold mt-0.5">10</span>
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] sm:text-[10px] font-bold mt-0.5">10</span>
                   </div>
                 </button>
 
                 {/* Play/Pause */}
                 <button 
-                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-110"
+                  onClick={togglePlay}
+                  className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-110 active:scale-95"
                 >
                   {isPlaying ? (
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
                     </svg>
                   ) : (
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   )}
@@ -369,15 +372,15 @@ export default function VideoAccessPage() {
 
                 {/* Skip Forward 10s */}
                 <button 
-                  onClick={(e) => { e.stopPropagation(); skipForward(); }}
-                  className="w-12 h-12 sm:w-16 sm:h-16 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
+                  onClick={skipForward}
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95"
                   title="Avancer 10s"
                 >
                   <div className="relative">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs font-bold mt-0.5">10</span>
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] sm:text-[10px] font-bold mt-0.5">10</span>
                   </div>
                 </button>
               </div>
