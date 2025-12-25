@@ -808,7 +808,7 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-gray-100">
                     {logs.map((log) => (
                       <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-900">{log.username || log.user_id.slice(0, 8) + '...'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{log.username || 'Unknown User'}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{log.card_title || log.card_id}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{new Date(log.accessed_at).toLocaleString()}</td>
                       </tr>

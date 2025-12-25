@@ -87,9 +87,13 @@ export async function authenticateUser(
 
     // Generate new session token to mark user as logged in
     const newSessionToken = uuidv4();
+    const loginAt = new Date().toISOString();
     const { error: updateError } = await adminClient
       .from('user_profiles')
-      .update({ session_token: newSessionToken })
+      .update({ 
+        session_token: newSessionToken,
+        last_login_at: loginAt
+      })
       .eq('user_id', data.user.id);
 
     if (updateError) {
@@ -164,7 +168,7 @@ export async function validateSession(): Promise<SessionValidation> {
     // Check credential expiration and session token
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
-      .select('role, expires_at, session_token')
+      .select('role, expires_at, session_token, force_logout_at, last_login_at')
       .eq('user_id', session.user.id)
       .single();
 
@@ -174,11 +178,27 @@ export async function validateSession(): Promise<SessionValidation> {
 
     // Check if session token is null (user was force logged out)
     if (!profile.session_token) {
+      // Force sign out on the server to clear cookies
+      await serverSupabase.auth.signOut();
       return { valid: false, reason: 'logged_out' };
+    }
+
+    // Check if user was force-logged out after their last login
+    if (profile.force_logout_at && profile.last_login_at) {
+      const forceLogoutTime = new Date(profile.force_logout_at);
+      const lastLoginTime = new Date(profile.last_login_at);
+      
+      if (forceLogoutTime > lastLoginTime) {
+        // User was force-logged out after they logged in
+        await serverSupabase.auth.signOut();
+        return { valid: false, reason: 'logged_out' };
+      }
     }
 
     const expiresAt = new Date(profile.expires_at);
     if (expiresAt < new Date()) {
+      // Clear session for expired credentials
+      await serverSupabase.auth.signOut();
       return { valid: false, reason: 'expired' };
     }
 

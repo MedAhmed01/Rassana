@@ -78,7 +78,11 @@ export async function getAccessLogsWithDetails(filters?: AccessLogFilters): Prom
     const supabase = await createServerSupabaseClient();
     let query = supabase
       .from('access_logs')
-      .select('*, user_profiles(username), cards(title)');
+      .select(`
+        *,
+        user_profiles!inner(username),
+        cards!inner(title)
+      `);
     
     if (filters?.userId) {
       query = query.eq('user_id', filters.userId);
@@ -101,11 +105,21 @@ export async function getAccessLogsWithDetails(filters?: AccessLogFilters): Prom
     const { data, error } = await query;
     
     if (error || !data) {
+      console.error('Error fetching access logs:', error);
       return [];
     }
     
-    return data as AccessLog[];
+    // Transform the data to flatten the joined fields
+    return data.map((log: any) => ({
+      id: log.id,
+      user_id: log.user_id,
+      card_id: log.card_id,
+      accessed_at: log.accessed_at,
+      username: log.user_profiles?.username || 'Unknown',
+      card_title: log.cards?.title || log.card_id,
+    })) as AccessLog[];
   } catch (err) {
+    console.error('Exception fetching access logs:', err);
     return [];
   }
 }

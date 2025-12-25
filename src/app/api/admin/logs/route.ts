@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuth } from '@/middleware/auth';
-import { getAccessLogs } from '@/services/accessLogs';
+import { getAccessLogsWithDetails } from '@/services/accessLogs';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       endDate: searchParams.get('endDate') || undefined,
     };
     
-    const logs = await getAccessLogs(filters);
+    const logs = await getAccessLogsWithDetails(filters);
     
     return NextResponse.json({ logs });
   } catch (error) {

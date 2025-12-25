@@ -184,10 +184,14 @@ export async function forceLogoutUser(userId: string): Promise<{ success: boolea
   try {
     const adminClient = createAdminClient();
     
-    // Clear the session token in the database
+    // Set force_logout_at timestamp and clear session token
+    const forceLogoutAt = new Date().toISOString();
     const { error: updateError } = await adminClient
       .from('user_profiles')
-      .update({ session_token: null })
+      .update({ 
+        session_token: null,
+        force_logout_at: forceLogoutAt
+      })
       .eq('user_id', userId);
     
     if (updateError) {
