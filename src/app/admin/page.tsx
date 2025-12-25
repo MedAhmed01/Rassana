@@ -200,6 +200,8 @@ export default function AdminDashboard() {
     
     setError('');
     
+    console.log('Updating user with data:', editForm);
+    
     const response = await fetch(`/api/admin/users/${editingUser.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -209,10 +211,12 @@ export default function AdminDashboard() {
     const data = await response.json();
     
     if (!response.ok) {
+      console.error('Update error:', data);
       setError(data.error || 'Failed to update user');
       return;
     }
     
+    console.log('Update successful');
     setEditingUser(null);
     setEditForm({ username: '', password: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();

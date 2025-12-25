@@ -15,6 +15,9 @@ export async function PATCH(
     const body = await request.json();
     const { username, password, role, subscriptions, expires_at } = body;
     
+    console.log('Updating user:', userId);
+    console.log('Update data:', { username, role, subscriptions, expires_at });
+    
     const supabase = await createServerSupabaseClient();
     
     // Update user profile
@@ -24,14 +27,17 @@ export async function PATCH(
     if (subscriptions !== undefined) updates.subscriptions = subscriptions;
     if (expires_at) updates.expires_at = new Date(expires_at).toISOString();
     
+    console.log('Updates to apply:', updates);
+    
     const { error: profileError } = await supabase
       .from('user_profiles')
       .update(updates)
       .eq('user_id', userId);
     
     if (profileError) {
+      console.error('Profile update error:', profileError);
       return NextResponse.json(
-        { error: 'Failed to update user profile' },
+        { error: 'Failed to update user profile: ' + profileError.message },
         { status: 400 }
       );
     }
@@ -49,6 +55,7 @@ export async function PATCH(
       }
     }
     
+    console.log('User updated successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating user:', error);
