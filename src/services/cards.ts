@@ -1,0 +1,184 @@
+import { createServerSupabaseClient } from '@/lib/supabase';
+import type { Card, CardCreateRequest, CardResult } from '@/types';
+
+/**
+ * Validate YouTube URL format
+ */
+export function isValidYouTubeUrl(url: string): boolean {
+  const patterns = [
+    /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/,
+    /^https?:\/\/youtu\.be\/[\w-]+/,
+    /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/,
+  ];
+  return patterns.some(pattern => pattern.test(url));
+}
+
+/**
+ * Create a new card-video mapping
+ */
+export async function insertCard(request: CardCreateRequest): Promise<CardResult> {
+  try {
+    const { card_id, video_url, title, subject } = request;
+    
+    // Validate required fields
+    if (!card_id || card_id.trim().length === 0) {
+      return { success: false, error: 'Card ID is required' };
+    }
+    
+    if (!video_url || video_url.trim().length === 0) {
+      return { success: false, error: 'Video URL is required' };
+    }
+    
+    if (!isValidYouTubeUrl(video_url)) {
+      return { success: false, error: 'Please provide a valid YouTube URL' };
+    }
+    
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('cards')
+      .insert({
+        card_id,
+        video_url,
+        title: title || null,
+        subject: subject || null,
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      if (error.code === '23505') {
+        return { success: false, error: 'Card ID already exists' };
+      }
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true, card: data as Card };
+  } catch (err) {
+    return { success: false, error: 'Failed to create card' };
+  }
+}
+
+/**
+ * Update a card
+ */
+export async function updateCard(
+  id: string,
+  updates: { video_url?: string; title?: string; subject?: string }
+): Promise<CardResult> {
+  try {
+    if (updates.video_url && !isValidYouTubeUrl(updates.video_url)) {
+      return { success: false, error: 'Please provide a valid YouTube URL' };
+    }
+    
+    const updateData: Record<string, string | null> = {};
+    if (updates.video_url) updateData.video_url = updates.video_url;
+    if (updates.title !== undefined) updateData.title = updates.title || null;
+    if (updates.subject !== undefined) updateData.subject = updates.subject || null;
+    
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('cards')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    
+    if (!data) {
+      return { success: false, error: 'Card not found' };
+    }
+    
+    return { success: true, card: data as Card };
+  } catch (err) {
+    return { success: false, error: 'Failed to update card' };
+  }
+}
+
+/**
+ * Get video URL for a card
+ */
+export async function queryVideoUrl(cardId: string): Promise<string | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('cards')
+      .select('video_url')
+      .eq('card_id', cardId)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+    
+    return data.video_url;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Get a card by ID
+ */
+export async function getCardById(cardId: string): Promise<Card | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('cards')
+      .select('*')
+      .eq('card_id', cardId)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+    
+    return data as Card;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Get all cards
+ */
+export async function getAllCards(): Promise<Card[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('cards')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error || !data) {
+      return [];
+    }
+    
+    return data as Card[];
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * Delete a card
+ */
+export async function deleteCard(cardId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase
+      .from('cards')
+      .delete()
+      .eq('id', cardId);
+    
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Failed to delete card' };
+  }
+}
