@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAuth } from '@/middleware/auth';
 import { queryVideoUrl } from '@/services/cards';
 import { logVideoAccess } from '@/services/accessLogs';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> }
 ) {
   try {
@@ -25,6 +25,7 @@ export async function GET(
     }
     
     // Log the access
+    const supabase = await createServerSupabaseClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
       await logVideoAccess(session.user.id, cardId);

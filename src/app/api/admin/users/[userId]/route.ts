@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuth } from '@/middleware/auth';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await checkAdminAuth();
     if (auth.error) return auth.error;
     
+    const { userId } = await params;
     const body = await request.json();
     const { username, password, role, expires_at } = body;
-    const userId = params.userId;
+    
+    const supabase = await createServerSupabaseClient();
     
     // Update user profile
-    const updates: any = {};
+    const updates: Record<string, string> = {};
     if (username) updates.username = username;
     if (role) updates.role = role;
     if (expires_at) updates.expires_at = new Date(expires_at).toISOString();
@@ -32,24 +34,16 @@ export async function PATCH(
       );
     }
     
-    // Update password if provided
+    // Update password if provided using admin client
     if (password) {
-      const { data: authUser } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('user_id', userId)
-        .single();
+      const adminClient = createAdminClient();
+      const { error: passwordError } = await adminClient.auth.admin.updateUserById(
+        userId,
+        { password }
+      );
       
-      if (authUser) {
-        // Update password in auth.users using raw SQL
-        const { error: passwordError } = await supabase.rpc('update_user_password', {
-          user_id: userId,
-          new_password: password
-        });
-        
-        // If RPC doesn't exist, we'll need to use a different approach
-        // For now, just log that password update was requested
-        console.log('Password update requested for user:', userId);
+      if (passwordError) {
+        console.error('Error updating password:', passwordError);
       }
     }
     
@@ -64,33 +58,25 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await checkAdminAuth();
     if (auth.error) return auth.error;
     
-    const userId = params.userId;
+    const { userId } = await params;
+    const adminClient = createAdminClient();
     
-    // Delete user profile (cascade will handle auth.users)
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .delete()
-      .eq('user_id', userId);
+    // Delete from auth.users (cascade will handle profile)
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
     
-    if (profileError) {
+    if (authError) {
+      console.error('Error deleting auth user:', authError);
       return NextResponse.json(
         { error: 'Failed to delete user' },
         { status: 400 }
       );
-    }
-    
-    // Delete from auth.users
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (authError) {
-      console.error('Error deleting auth user:', authError);
     }
     
     return NextResponse.json({ success: true });
