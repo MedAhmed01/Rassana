@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 interface VideoData {
@@ -25,10 +25,12 @@ export default function VideoAccessPage() {
   const params = useParams();
   const router = useRouter();
   const cardId = params.cardId as string;
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   useEffect(() => {
     async function handleAccess() {
@@ -79,7 +81,6 @@ export default function VideoAccessPage() {
   // Prevent keyboard shortcuts for copying/saving
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent Ctrl+S, Ctrl+U, Ctrl+Shift+I, F12
       if (
         (e.ctrlKey && (e.key === 's' || e.key === 'u')) ||
         (e.ctrlKey && e.shiftKey && e.key === 'i') ||
@@ -92,6 +93,10 @@ export default function VideoAccessPage() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handlePlayClick = () => {
+    setIsPlaying(true);
+  };
   
   if (loading) {
     return (
@@ -153,9 +158,9 @@ export default function VideoAccessPage() {
 
   const youtubeId = extractYouTubeId(videoData.videoUrl);
   
-  // YouTube embed URL with privacy-enhanced mode and restricted controls
+  // YouTube embed URL with maximum restrictions
   const embedUrl = youtubeId 
-    ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&showinfo=0&controls=1&disablekb=0&fs=1&iv_load_policy=3&playsinline=1`
+    ? `https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&showinfo=0&controls=1&disablekb=0&fs=0&iv_load_policy=3&playsinline=1&autoplay=${isPlaying ? 1 : 0}&cc_load_policy=0`
     : null;
 
   return (
@@ -192,21 +197,73 @@ export default function VideoAccessPage() {
           )}
           
           {embedUrl ? (
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-              <iframe
-                className="absolute inset-0 w-full h-full rounded-xl"
-                src={embedUrl}
-                title="Video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-              {/* Overlay to prevent right-click on iframe */}
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{ pointerEvents: 'none' }}
-              />
+            <div 
+              ref={containerRef}
+              className="relative w-full bg-black rounded-xl overflow-hidden"
+              style={{ paddingBottom: '56.25%' }}
+            >
+              {!isPlaying ? (
+                // Custom thumbnail with play button
+                <div 
+                  className="absolute inset-0 cursor-pointer group"
+                  onClick={handlePlayClick}
+                >
+                  {/* YouTube thumbnail */}
+                  <img
+                    src={`https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`}
+                    alt="Video thumbnail"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to lower quality thumbnail
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+                    }}
+                  />
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                  {/* Play button */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/50 group-hover:scale-110 transition-transform">
+                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                  {/* Click to play text */}
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <span className="text-white/80 text-sm">Click to play</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Video iframe */}
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={embedUrl}
+                    title="Video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                  
+                  {/* Top overlay - blocks YouTube logo and title */}
+                  <div 
+                    className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-gray-900/90 to-transparent pointer-events-auto z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  
+                  {/* Bottom-right overlay - blocks YouTube logo */}
+                  <div 
+                    className="absolute bottom-0 right-0 w-32 h-12 pointer-events-auto z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  
+                  {/* Top-right overlay - blocks more options */}
+                  <div 
+                    className="absolute top-0 right-0 w-24 h-16 pointer-events-auto z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </>
+              )}
             </div>
           ) : (
             <div className="bg-gray-800 rounded-xl p-8 text-center">
