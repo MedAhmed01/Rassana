@@ -4,7 +4,23 @@ import QRCode from 'qrcode';
  * Get the base URL for the application
  */
 export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // Check for explicitly set base URL first
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  
+  // Render provides this automatically
+  if (process.env.RENDER_EXTERNAL_URL) {
+    return process.env.RENDER_EXTERNAL_URL;
+  }
+  
+  // Vercel provides this
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:3000';
 }
 
 /**
