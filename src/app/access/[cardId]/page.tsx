@@ -61,12 +61,6 @@ export default function VideoAccessPage() {
         const data = await response.json();
         
         if (response.status === 401) {
-          // Check if session was invalidated (logged in from another device)
-          if (data.error?.includes('another device')) {
-            setError('Your session has expired because your account was logged in from another device. Please log in again.');
-            setLoading(false);
-            return;
-          }
           router.push(`/login?redirect=/access/${cardId}`);
           return;
         }
@@ -285,22 +279,13 @@ export default function VideoAccessPage() {
   }
   
   if (error) {
-    const isSessionError = error.includes('another device');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
         <div className="max-w-md w-full bg-gray-800 rounded-2xl p-8 text-center">
           <p className="text-red-400 mb-4">{error}</p>
-          <div className="flex gap-3 justify-center">
-            {isSessionError ? (
-              <button onClick={() => router.push('/login')} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Login again
-              </button>
-            ) : (
-              <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Try again
-              </button>
-            )}
-          </div>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Try again
+          </button>
         </div>
       </div>
     );

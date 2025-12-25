@@ -22,7 +22,7 @@ export function emailToUsername(email: string): string {
 /**
  * Authenticate a user with username and password
  * Checks credential expiration after successful auth
- * Generates a new session token to invalidate other sessions
+ * Blocks login if user already has an active session (prevents account sharing)
  */
 export async function authenticateUser(
   username: string,
@@ -34,6 +34,20 @@ export async function authenticateUser(
     const email = usernameToEmail(username);
     
     console.log('Attempting login with email:', email);
+    
+    // First check if user already has an active session
+    const { data: existingProfile } = await adminClient
+      .from('user_profiles')
+      .select('session_token, user_id')
+      .eq('username', username)
+      .single();
+    
+    if (existingProfile?.session_token) {
+      return { 
+        success: false, 
+        error: 'This account is already logged in on another device. Please logout first.' 
+      };
+    }
     
     const { data, error } = await serverSupabase.auth.signInWithPassword({
       email,
@@ -71,7 +85,7 @@ export async function authenticateUser(
       };
     }
 
-    // Generate new session token to invalidate other sessions
+    // Generate new session token to mark user as logged in
     const newSessionToken = uuidv4();
     const { error: updateError } = await adminClient
       .from('user_profiles')
@@ -104,10 +118,24 @@ export async function authenticateUser(
 
 /**
  * Log out the current user and invalidate their session
+ * Clears the session token to allow login from other devices
  */
 export async function logout(): Promise<{ success: boolean; error?: string }> {
   try {
     const serverSupabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
+    
+    // Get current user to clear their session token
+    const { data: { session } } = await serverSupabase.auth.getSession();
+    
+    if (session?.user?.id) {
+      // Clear session token to allow new logins
+      await adminClient
+        .from('user_profiles')
+        .update({ session_token: null })
+        .eq('user_id', session.user.id);
+    }
+    
     const { error } = await serverSupabase.auth.signOut();
     
     if (error) {
@@ -122,10 +150,9 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
 
 /**
  * Validate the current session and check credential expiration
- * Also validates session token to enforce single session per user
  * Uses server-side Supabase client for proper cookie handling
  */
-export async function validateSession(sessionToken?: string): Promise<SessionValidation> {
+export async function validateSession(): Promise<SessionValidation> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const { data: { session }, error } = await serverSupabase.auth.getSession();
@@ -134,10 +161,10 @@ export async function validateSession(sessionToken?: string): Promise<SessionVal
       return { valid: false, reason: 'no_session' };
     }
 
-    // Check credential expiration and session token
+    // Check credential expiration
     const { data: profile, error: profileError } = await serverSupabase
       .from('user_profiles')
-      .select('role, expires_at, session_token')
+      .select('role, expires_at')
       .eq('user_id', session.user.id)
       .single();
 
@@ -150,15 +177,9 @@ export async function validateSession(sessionToken?: string): Promise<SessionVal
       return { valid: false, reason: 'expired' };
     }
 
-    // Validate session token if provided (for single session enforcement)
-    if (sessionToken && profile.session_token && sessionToken !== profile.session_token) {
-      return { valid: false, reason: 'session_invalidated' };
-    }
-
     return {
       valid: true,
       role: profile.role as 'admin' | 'student',
-      sessionToken: profile.session_token,
     };
   } catch (err) {
     return { valid: false, reason: 'error' };

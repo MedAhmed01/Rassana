@@ -12,7 +12,11 @@ export async function POST() {
       );
     }
     
-    return NextResponse.json({ success: true });
+    // Clear session token cookie
+    const response = NextResponse.json({ success: true });
+    response.cookies.delete('session_token');
+    
+    return response;
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },
