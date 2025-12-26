@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { validateSession } from '@/services/auth';
+import { validateSession, getCurrentUserProfile } from '@/services/auth';
 
 export async function GET() {
   try {
@@ -12,9 +12,15 @@ export async function GET() {
       );
     }
     
+    // Get full user profile for students
+    const profile = await getCurrentUserProfile();
+    
     return NextResponse.json({
       authenticated: true,
       role: validation.role,
+      username: profile?.username,
+      subscriptions: profile?.subscriptions || [],
+      expires_at: profile?.expires_at,
     });
   } catch (error) {
     return NextResponse.json(
