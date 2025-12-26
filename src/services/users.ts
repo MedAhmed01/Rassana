@@ -24,13 +24,15 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
     }
     
     // For students, expiration date is required. For admins, set to far future (100 years)
-    let finalExpiresAt = expires_at;
+    let finalExpiresAt: string;
     if (role === 'admin') {
       const farFuture = new Date();
       farFuture.setFullYear(farFuture.getFullYear() + 100);
       finalExpiresAt = farFuture.toISOString();
     } else if (!expires_at) {
       return { success: false, error: 'Expiration date is required for students' };
+    } else {
+      finalExpiresAt = expires_at;
     }
     
     const expirationDate = new Date(finalExpiresAt);
