@@ -18,6 +18,7 @@ export interface UserProfile {
   id: string;
   user_id: string;
   username: string;
+  phone?: string;
   role: 'admin' | 'student';
   subscriptions?: Subscription[];
   expires_at: string;
@@ -29,6 +30,7 @@ export interface UserProfile {
 export interface UserCredentials {
   username: string;
   password: string;
+  phone?: string;
   role: 'admin' | 'student';
   subscriptions?: Subscription[];
   expires_at?: string;

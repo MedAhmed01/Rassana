@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (auth.error) return auth.error;
     
     const body = await request.json();
-    const { username, password, role, subscriptions, expires_at } = body;
+    const { username, password, phone, role, subscriptions, expires_at } = body;
     
     // For admins, expires_at is not required
     if (!username || !password || !role) {
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     const result = await createUser({
       username,
       password,
+      phone: phone || undefined,
       role,
       subscriptions: subscriptions || [],
       expires_at: expires_at ? new Date(expires_at).toISOString() : undefined,

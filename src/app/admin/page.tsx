@@ -7,6 +7,7 @@ interface User {
   id: string;
   user_id: string;
   username: string;
+  phone?: string;
   role: 'admin' | 'student';
   subscriptions?: string[];
   expires_at: string;
@@ -38,9 +39,9 @@ function AdminDashboardContent() {
   const [error, setError] = useState('');
   
   const [users, setUsers] = useState<User[]>([]);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', phone: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ username: '', password: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
+  const [editForm, setEditForm] = useState({ username: '', password: '', phone: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
   
   const [cards, setCards] = useState<Card[]>([]);
   const [newCard, setNewCard] = useState({ card_id: '', video_url: '', title: '', subject: '', required_subscriptions: [] as string[] });
@@ -180,7 +181,7 @@ function AdminDashboardContent() {
       return;
     }
     
-    setNewUser({ username: '', password: '', role: 'student', subscriptions: [], expires_at: '' });
+    setNewUser({ username: '', password: '', phone: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
   
@@ -208,7 +209,7 @@ function AdminDashboardContent() {
     
     console.log('Update successful');
     setEditingUser(null);
-    setEditForm({ username: '', password: '', role: 'student', subscriptions: [], expires_at: '' });
+    setEditForm({ username: '', password: '', phone: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
   
@@ -242,6 +243,7 @@ function AdminDashboardContent() {
     setEditForm({
       username: user.username,
       password: '',
+      phone: user.phone || '',
       role: user.role,
       subscriptions: user.subscriptions || [],
       expires_at: new Date(user.expires_at).toISOString().split('T')[0],
@@ -565,6 +567,27 @@ function AdminDashboardContent() {
                           onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                           className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
                           required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone Field (Optional) */}
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                        Phone <span className="text-slate-600">(Optional)</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="tel"
+                          placeholder="e.g. 0612345678"
+                          value={newUser.phone}
+                          onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
                         />
                       </div>
                     </div>
@@ -1363,6 +1386,16 @@ function AdminDashboardContent() {
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   placeholder="Leave empty to keep current"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone <span className="text-gray-400">(Optional)</span></label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
+                  placeholder="e.g. 0612345678"
                 />
               </div>
               <div>

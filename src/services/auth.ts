@@ -20,18 +20,39 @@ export function emailToUsername(email: string): string {
 }
 
 /**
- * Authenticate a user with username and password
+ * Authenticate a user with username/phone and password
  * Checks credential expiration after successful auth
  */
 export async function authenticateUser(
-  username: string,
+  usernameOrPhone: string,
   password: string
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
-    const email = usernameToEmail(username);
+    const adminClient = createAdminClient();
     
-    console.log('Attempting login with:', { username, email, password: '***' });
+    // Check if input looks like a phone number (starts with + or contains only digits)
+    const isPhone = /^[\d+][\d\s-]*$/.test(usernameOrPhone.trim());
+    
+    let email: string;
+    
+    if (isPhone) {
+      // Look up username by phone number
+      const { data: profile } = await adminClient
+        .from('user_profiles')
+        .select('username')
+        .eq('phone', usernameOrPhone.trim())
+        .single();
+      
+      if (!profile) {
+        return { success: false, error: 'Invalid phone number or password' };
+      }
+      email = usernameToEmail(profile.username);
+    } else {
+      email = usernameToEmail(usernameOrPhone);
+    }
+    
+    console.log('Attempting login with:', { usernameOrPhone, email, password: '***' });
     
     const { data, error } = await serverSupabase.auth.signInWithPassword({
       email,
@@ -40,7 +61,7 @@ export async function authenticateUser(
 
     if (error) {
       console.error('Supabase auth error:', error);
-      return { success: false, error: 'Invalid username or password' };
+      return { success: false, error: 'Invalid username/phone or password' };
     }
 
     if (!data.session || !data.user) {
@@ -48,7 +69,6 @@ export async function authenticateUser(
     }
 
     // Use admin client to check profile (bypasses RLS)
-    const adminClient = createAdminClient();
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('role, expires_at')

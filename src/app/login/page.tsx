@@ -119,7 +119,7 @@ function LoginForm() {
                 {/* Username Field */}
                 <div className="space-y-2">
                   <label htmlFor="username" className="block text-sm font-medium text-[#ffd4b8]">
-                    Username
+                    Username or phone number
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -133,7 +133,7 @@ function LoginForm() {
                       type="text"
                       required
                       className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-[#ffd4b8]/40 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-white/10 transition-all duration-200"
-                      placeholder="Enter your username"
+                      placeholder="Username or phone number"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={loading}

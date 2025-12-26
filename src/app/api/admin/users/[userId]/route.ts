@@ -13,10 +13,10 @@ export async function PATCH(
     
     const { userId } = await params;
     const body = await request.json();
-    const { username, password, role, subscriptions, expires_at } = body;
+    const { username, password, phone, role, subscriptions, expires_at } = body;
     
     console.log('Updating user:', userId);
-    console.log('Update data:', { username, role, subscriptions, expires_at });
+    console.log('Update data:', { username, phone, role, subscriptions, expires_at });
     
     // Use admin client to bypass RLS
     const supabase = createAdminClient();
@@ -24,6 +24,7 @@ export async function PATCH(
     // Update user profile
     const updates: Record<string, any> = {};
     if (username) updates.username = username;
+    if (phone !== undefined) updates.phone = phone || null;
     if (role) updates.role = role;
     if (subscriptions !== undefined) updates.subscriptions = subscriptions;
     if (expires_at) updates.expires_at = new Date(expires_at).toISOString();
