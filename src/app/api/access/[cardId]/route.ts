@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAuth } from '@/middleware/auth';
 import { getCardById } from '@/services/cards';
 import { logVideoAccess } from '@/services/accessLogs';
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +26,7 @@ export async function GET(
     
     // Check subscription access for students
     if (auth.role === 'student') {
-      // Get user's subscriptions using admin client to bypass RLS
+      // Get user's subscriptions
       const supabase = await createServerSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -37,29 +37,28 @@ export async function GET(
         );
       }
       
-      // Use admin client to fetch profile (bypasses RLS)
-      const adminClient = createAdminClient();
-      const { data: profile, error: profileError } = await adminClient
+      const { data: profile } = await supabase
         .from('user_profiles')
         .select('subscriptions')
         .eq('user_id', user.id)
         .single();
       
-      console.log('User ID:', user.id);
-      console.log('Profile:', profile);
-      console.log('Profile error:', profileError);
+      const userSubscriptions = profile?.subscriptions || [];
+      const requiredSubscriptions = card.required_subscriptions || [];
       
-      const userSubscriptions = (profile?.subscriptions || []).map((s: string) => s.toLowerCase());
-      const requiredSubscriptions = (card.required_subscriptions || []).map((s: string) => s.toLowerCase());
-      
-      console.log('User subscriptions:', userSubscriptions);
-      console.log('Required subscriptions:', requiredSubscriptions);
+      console.log('Access check - User subscriptions:', userSubscriptions);
+      console.log('Access check - Required subscriptions:', requiredSubscriptions);
       
       // If card has required subscriptions, check if user has at least one
+      // Use case-insensitive comparison
       if (requiredSubscriptions.length > 0) {
+        const normalizedUserSubs = userSubscriptions.map((s: string) => s.toLowerCase());
         const hasAccess = requiredSubscriptions.some(required => 
-          userSubscriptions.includes(required)
+          normalizedUserSubs.includes(required.toLowerCase())
         );
+        
+        console.log('Access check - Normalized user subs:', normalizedUserSubs);
+        console.log('Access check - Has access:', hasAccess);
         
         if (!hasAccess) {
           return NextResponse.json(
