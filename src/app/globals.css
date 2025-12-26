@@ -109,3 +109,13 @@ body {
   outline: none;
   box-shadow: 0 0 0 3px rgba(212, 131, 75, 0.3);
 }
+
+
+/* Moving watermark animation */
+@keyframes moveWatermark {
+  0% { top: 10%; left: 10%; }
+  25% { top: 10%; left: 80%; }
+  50% { top: 75%; left: 80%; }
+  75% { top: 75%; left: 10%; }
+  100% { top: 10%; left: 10%; }
+}
