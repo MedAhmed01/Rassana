@@ -597,10 +597,26 @@ function VideoAccessContent() {
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
-            {/* Watermark */}
+            {/* Moving Watermark */}
             {videoData.phone && (
-              <div className="absolute top-4 right-4 z-40 pointer-events-none select-none">
-                <span className="text-white/20 text-[10px] font-medium tracking-wide">{videoData.phone}</span>
+              <div className="absolute inset-0 z-40 pointer-events-none select-none overflow-hidden">
+                <div 
+                  className="absolute text-white/25 text-[11px] font-medium tracking-wide"
+                  style={{
+                    animation: 'moveWatermark 20s linear infinite',
+                  }}
+                >
+                  {videoData.phone}
+                </div>
+                <style jsx>{`
+                  @keyframes moveWatermark {
+                    0% { top: 10%; left: 10%; }
+                    25% { top: 10%; left: 80%; }
+                    50% { top: 75%; left: 80%; }
+                    75% { top: 75%; left: 10%; }
+                    100% { top: 10%; left: 10%; }
+                  }
+                `}</style>
               </div>
             )}
             
