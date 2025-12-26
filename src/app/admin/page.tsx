@@ -48,6 +48,9 @@ export default function AdminDashboard() {
   const [cardQrCodes, setCardQrCodes] = useState<Record<string, string>>({});
   const [loadingQr, setLoadingQr] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(true);
+  const [isUsersListOpen, setIsUsersListOpen] = useState(true);
   
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
@@ -357,56 +360,113 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gray-900 text-white sticky top-0 z-40">
+    <div className="min-h-screen bg-slate-50">
+      {/* Modern Header */}
+      <header className="sticky top-0 z-40 bg-slate-50">
+        {/* Content Container - Same max-width as main content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+          {/* Header Card */}
+          <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-4 sm:p-5">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/10 via-blue-500/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            
+            {/* Main Header Content */}
+            <div className="relative flex items-center justify-between mb-4">
+              {/* Logo & Title */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Animated Logo */}
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Title */}
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    Admin Dashboard
+                  </h1>
+                  <p className="text-slate-400 text-xs sm:text-sm hidden sm:flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                    Manage users, cards & access logs
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="font-bold text-lg">Admin Dashboard</h1>
-                <p className="text-gray-400 text-xs hidden sm:block">Manage users, cards, and access logs</p>
+
+              {/* Right Side Actions */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Status Badge - Hidden on mobile */}
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 backdrop-blur-sm rounded-full border border-slate-600/50">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                  <span className="text-xs font-medium text-slate-300">System Online</span>
+                </div>
+
+                {/* Sign Out Button */}
+                <button
+                  onClick={handleLogout}
+                  className="group relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-700/50 hover:bg-red-500/20 backdrop-blur-sm border border-slate-600/50 hover:border-red-500/50 rounded-xl text-slate-300 hover:text-red-400 transition-all duration-300"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="text-sm font-medium hidden sm:inline">Sign out</span>
+                </button>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            >
-              Sign out
-            </button>
+
+            {/* Tab Navigation - Centered */}
+            <nav className="relative flex justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide -mx-2 px-2">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-300 ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                    }`}
+                  >
+                    {/* Active Background */}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-blue-500/25"></div>
+                    )}
+                    
+                    {/* Content */}
+                    <div className="relative flex items-center gap-2">
+                      <svg className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} d={tab.icon} />
+                      </svg>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      
+                      {/* Badge for counts */}
+                      {tab.id === 'users' && users.length > 0 && (
+                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
+                        }`}>
+                          {users.length}
+                        </span>
+                      )}
+                      {tab.id === 'cards' && cards.length > 0 && (
+                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
+                        }`}>
+                          {cards.length}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
       </header>
-
-      {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-[72px] z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <nav className="flex gap-1 overflow-x-auto py-2 -mb-px">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
-                </svg>
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
 
       {/* Error Alert */}
       {error && (
@@ -430,137 +490,452 @@ export default function AdminDashboard() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            {/* Create User Form */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Create New User</h2>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                    required
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                    required
-                  />
-                  <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  >
-                    <option value="student">Student</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <input
-                    type="date"
-                    value={newUser.expires_at}
-                    onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                    required
-                  />
-                </div>
-                
-                {newUser.role === 'student' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Subscriptions</label>
-                    <div className="flex flex-wrap gap-2">
-                      {availableSubscriptions.map((sub) => (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            newUser.subscriptions.includes(sub)
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                        </button>
-                      ))}
+            {/* Create User Form - Modern Redesign */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
+              {/* Animated gradient border */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-20 blur-xl"></div>
+              
+              <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
+                {/* Collapsible Header */}
+                <button
+                  onClick={() => setIsCreateUserOpen(!isCreateUserOpen)}
+                  className="w-full flex items-center justify-between p-6 sm:p-8 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-50"></div>
+                      <div className="relative w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <h2 className="text-xl sm:text-2xl font-bold text-white">Create New User</h2>
+                      <p className="text-slate-400 text-sm mt-0.5">Add a new student or admin to the system</p>
                     </div>
                   </div>
-                )}
-                
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
-                >
-                  Create User
+                  <div className={`w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center transition-transform duration-300 ${isCreateUserOpen ? 'rotate-180' : ''}`}>
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </button>
-              </form>
+
+                {/* Collapsible Content */}
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCreateUserOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+                    <form onSubmit={handleCreateUser} className="space-y-6">
+                  {/* Input Fields Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    {/* Username Field */}
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                        Username
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Enter username"
+                          value={newUser.username}
+                          onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Password Field */}
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="password"
+                          placeholder="Enter password"
+                          value={newUser.password}
+                          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Role Field */}
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                        Role
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <select
+                          value={newUser.role}
+                          onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
+                        >
+                          <option value="student">Student</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expiration Date Field */}
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                        Expires On
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="date"
+                          value={newUser.expires_at}
+                          onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Subscriptions Section */}
+                  {newUser.role === 'student' && (
+                    <div className="pt-2">
+                      <div className="flex items-center gap-2 mb-4">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <label className="text-sm font-semibold text-white">Subscriptions</label>
+                        <span className="text-xs text-slate-500 ml-auto">Select access levels</span>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {availableSubscriptions.map((sub) => {
+                          const isSelected = newUser.subscriptions.includes(sub);
+                          const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
+                            math: { gradient: 'from-blue-500 to-cyan-500', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                            physics: { gradient: 'from-purple-500 to-pink-500', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                            science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                          };
+                          const color = colors[sub] || colors.math;
+                          
+                          return (
+                            <button
+                              key={sub}
+                              type="button"
+                              onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
+                              className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                                isSelected
+                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? 'blue' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
+                                  : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
+                              }`}
+                            >
+                              <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
+                              </svg>
+                              <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                              {isSelected && (
+                                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
+                    >
+                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
+                        <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span className="font-semibold text-white text-base">Create User</span>
+                      </div>
+                      {/* Shine effect */}
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                    </button>
+                  </div>
+                </form>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Users Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Username</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Subscriptions</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Expires</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Created</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">{user.username}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${
-                            user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+            {/* Users List - Modern Card Design */}
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              {/* Collapsible Header */}
+              <button
+                onClick={() => setIsUsersListOpen(!isUsersListOpen)}
+                className="w-full flex items-center justify-between p-5 cursor-pointer group hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-slate-900">All Users</h3>
+                    <p className="text-sm text-slate-500">{users.length} registered {users.length === 1 ? 'user' : 'users'}</p>
+                  </div>
+                </div>
+                <div className={`w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center transition-transform duration-300 ${isUsersListOpen ? 'rotate-180' : ''}`}>
+                  <svg className="w-4 h-4 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* Collapsible Content */}
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isUsersListOpen ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="border-t border-slate-100 p-5 space-y-4">
+                  {/* Search Input */}
+                  <div className="relative w-full sm:w-72">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by username..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                    />
+                    {userSearchQuery && (
+                      <button
+                        onClick={() => setUserSearchQuery('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Users Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {users
+                      .filter(user => user.username.toLowerCase().includes(userSearchQuery.toLowerCase()))
+                      .map((user) => {
+                  const isExpired = new Date(user.expires_at) < new Date();
+                  const isExpiringSoon = !isExpired && new Date(user.expires_at) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                  
+                  return (
+                    <div
+                      key={user.id}
+                      className="group relative bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden"
+                    >
+                      {/* Card Header with gradient */}
+                      <div className={`relative h-20 ${
+                        user.role === 'admin' 
+                          ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600' 
+                          : 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800'
+                      }`}>
+                        {/* Pattern overlay */}
+                        <div className="absolute inset-0 opacity-10">
+                          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <defs>
+                              <pattern id={`grid-${user.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                                <circle cx="1" cy="1" r="1" fill="white"/>
+                              </pattern>
+                            </defs>
+                            <rect width="100" height="100" fill={`url(#grid-${user.id})`}/>
+                          </svg>
+                        </div>
+                        
+                        {/* Role Badge */}
+                        <div className="absolute top-3 right-3">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full backdrop-blur-sm ${
+                            user.role === 'admin' 
+                              ? 'bg-white/20 text-white' 
+                              : 'bg-white/20 text-white'
                           }`}>
+                            {user.role === 'admin' ? (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
+                              </svg>
+                            )}
                             {user.role}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 hidden lg:table-cell">
-                          {user.role === 'student' && user.subscriptions && user.subscriptions.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {user.subscriptions.map((sub) => (
-                                <span key={sub} className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
-                                  {sub}
-                                </span>
-                              ))}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="absolute -bottom-8 left-5">
+                          <div className="relative">
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg border-4 border-white ${
+                              user.role === 'admin'
+                                ? 'bg-gradient-to-br from-violet-400 to-purple-600 text-white'
+                                : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600'
+                            }`}>
+                              {user.username.charAt(0).toUpperCase()}
                             </div>
-                          ) : user.role === 'student' ? (
-                            <span className="text-sm text-gray-400">No subscriptions</span>
-                          ) : (
-                            <span className="text-sm text-gray-400">N/A</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell">{new Date(user.expires_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">{new Date(user.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => startEditUser(user)}
-                              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.id, user.username)}
-                              className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                              Delete
-                            </button>
+                            {/* Online indicator */}
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white ${
+                              isExpired ? 'bg-red-400' : isExpiringSoon ? 'bg-amber-400' : 'bg-emerald-400'
+                            }`}></div>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="pt-10 pb-4 px-5">
+                        {/* Username */}
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">{user.username}</h4>
+                        
+                        {/* Subscriptions */}
+                        {user.role === 'student' && (
+                          <div className="mb-4">
+                            {user.subscriptions && user.subscriptions.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {user.subscriptions.map((sub) => {
+                                  const subColors: Record<string, string> = {
+                                    math: 'bg-blue-100 text-blue-700 ring-blue-200',
+                                    physics: 'bg-purple-100 text-purple-700 ring-purple-200',
+                                    science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                                  };
+                                  return (
+                                    <span 
+                                      key={sub} 
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${subColors[sub] || 'bg-slate-100 text-slate-700 ring-slate-200'}`}
+                                    >
+                                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-slate-400 italic">No subscriptions</span>
+                            )}
+                          </div>
+                        )}
+                        {user.role === 'admin' && (
+                          <p className="text-sm text-slate-500 mb-4">Full system access</p>
+                        )}
+
+                        {/* Stats Row */}
+                        <div className="flex items-center gap-4 py-3 border-t border-slate-100">
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-400 uppercase tracking-wide">Expires</p>
+                            <p className={`text-sm font-semibold ${
+                              isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-slate-700'
+                            }`}>
+                              {new Date(user.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-400 uppercase tracking-wide">Created</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-3">
+                          <button
+                            onClick={() => startEditUser(user)}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.username)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm rounded-xl transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expired/Expiring Soon Banner */}
+                      {isExpired && (
+                        <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-xs font-bold text-center py-1">
+                          EXPIRED
+                        </div>
+                      )}
+                      {isExpiringSoon && !isExpired && (
+                        <div className="absolute top-0 left-0 right-0 bg-amber-500 text-white text-xs font-bold text-center py-1">
+                          EXPIRING SOON
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Empty State */}
+              {users.length === 0 && (
+                <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">No users yet</h3>
+                  <p className="text-slate-500">Create your first user using the form above</p>
+                </div>
+              )}
+              
+              {/* No Search Results */}
+              {users.length > 0 && users.filter(user => user.username.toLowerCase().includes(userSearchQuery.toLowerCase())).length === 0 && (
+                <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">No users found</h3>
+                  <p className="text-slate-500">No users match "{userSearchQuery}"</p>
+                  <button
+                    onClick={() => setUserSearchQuery('')}
+                    className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
+                </div>
               </div>
             </div>
           </div>
@@ -569,64 +944,167 @@ export default function AdminDashboard() {
         {/* Cards Tab */}
         {activeTab === 'cards' && (
           <div className="space-y-6">
-            {/* Create Card Form */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Add New Card</h2>
-              <form onSubmit={handleCreateCard} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Card ID (e.g., PHY-001)"
-                    value={newCard.card_id}
-                    onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                    required
-                  />
-                  <input
-                    type="url"
-                    placeholder="YouTube URL"
-                    value={newCard.video_url}
-                    onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Title (optional)"
-                    value={newCard.title}
-                    onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Required Subscriptions (students must have at least one)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {availableSubscriptions.map((sub) => (
-                      <button
-                        key={sub}
-                        type="button"
-                        onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          newCard.required_subscriptions.includes(sub)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
-                    ))}
+            {/* Create Card Form - Modern Glass Design */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
+              {/* Animated gradient border */}
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 opacity-20 blur-xl"></div>
+              
+              <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
+                {/* Header */}
+                <div className="p-6 sm:p-8 pb-0">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl blur-lg opacity-50"></div>
+                      <div className="relative w-14 h-14 bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white">Create New Card</h2>
+                      <p className="text-slate-400 text-sm mt-0.5">Add a new QR card with video content</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Leave empty to allow all students to access this card</p>
                 </div>
-                
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
-                >
-                  Add Card
-                </button>
-              </form>
+
+                {/* Form Content */}
+                <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+                  <form onSubmit={handleCreateCard} className="space-y-6">
+                    {/* Input Fields Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                      {/* Card ID Field */}
+                      <div className="group">
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                          Card ID
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="e.g., PHY-001"
+                            value={newCard.card_id}
+                            onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
+                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Video URL Field */}
+                      <div className="group">
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                          YouTube URL
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <input
+                            type="url"
+                            placeholder="https://youtube.com/..."
+                            value={newCard.video_url}
+                            onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
+                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Title Field */}
+                      <div className="group">
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                          Title (Optional)
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Card title"
+                            value={newCard.title}
+                            onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
+                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subscriptions Section */}
+                    <div className="pt-2">
+                      <div className="flex items-center gap-2 mb-4">
+                        <svg className="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <label className="text-sm font-semibold text-white">Required Subscriptions</label>
+                        <span className="text-xs text-slate-500 ml-auto">Students need at least one</span>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {availableSubscriptions.map((sub) => {
+                          const isSelected = newCard.required_subscriptions.includes(sub);
+                          const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
+                            math: { gradient: 'from-blue-500 to-cyan-500', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                            physics: { gradient: 'from-purple-500 to-pink-500', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                            science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                          };
+                          const color = colors[sub] || colors.math;
+                          
+                          return (
+                            <button
+                              key={sub}
+                              type="button"
+                              onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
+                              className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                                isSelected
+                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg scale-[1.02]`
+                                  : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
+                              }`}
+                            >
+                              <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
+                              </svg>
+                              <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                              {isSelected && (
+                                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-3 ml-1">Leave empty to allow all students to access this card</p>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-4">
+                      <button
+                        type="submit"
+                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-600 via-pink-500 to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/25"
+                      >
+                        <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-orange-600 via-pink-500 to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
+                          <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                          </svg>
+                          <span className="font-semibold text-white text-base">Create Card</span>
+                        </div>
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
 
             {/* Cards Grid - Compact Design */}
