@@ -46,7 +46,6 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
       return { success: false, error: 'Admin client not configured. Check SUPABASE_SERVICE_ROLE_KEY.' };
     }
     
-    const supabase = await createServerSupabaseClient();
     const email = usernameToEmail(username);
     
     console.log('Creating auth user with email:', email);
@@ -76,8 +75,8 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
       return { success: false, error: 'Failed to create user' };
     }
     
-    // Create user profile
-    const { error: profileError } = await supabase
+    // Create user profile using admin client to bypass RLS
+    const { error: profileError } = await adminClient
       .from('user_profiles')
       .insert({
         user_id: authData.user.id,

@@ -343,7 +343,7 @@ function AdminDashboardContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-500 text-sm">Loading dashboard...</p>
         </div>
       </div>
@@ -365,8 +365,8 @@ function AdminDashboardContent() {
           {/* Header Card */}
           <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-4 sm:p-5">
             {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#e09a68]/20 via-purple-500/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#e09a68]/10 via-[#e09a68]/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#ff8240]/20 via-[#00f99d]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#ff8240]/10 via-[#ff8240]/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
             
             {/* Main Header Content */}
             <div className="relative flex items-center justify-between mb-4">
@@ -374,8 +374,8 @@ function AdminDashboardContent() {
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Animated Logo */}
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#d4834b] via-purple-600 to-[#d4834b] rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
-                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-[#e09a68] via-[#d4834b] to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8240] via-[#00f99d] to-[#ff8240] rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-[#ff8240] via-[#ff8240] to-[#00f99d] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                     <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
@@ -431,7 +431,7 @@ function AdminDashboardContent() {
                   >
                     {/* Active Background */}
                     {isActive && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#d4834b] to-purple-600 rounded-xl shadow-lg shadow-[#e09a68]/25"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-xl shadow-lg shadow-[#ff8240]/25"></div>
                     )}
                     
                     {/* Content */}
@@ -490,7 +490,7 @@ function AdminDashboardContent() {
             {/* Create User Form - Modern Redesign */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
               {/* Animated gradient border */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#e09a68] via-purple-500 to-pink-500 opacity-20 blur-xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#ff8240] via-[#00f99d] to-pink-500 opacity-20 blur-xl"></div>
               
               <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
                 {/* Collapsible Header */}
@@ -500,8 +500,8 @@ function AdminDashboardContent() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#e09a68] to-purple-500 rounded-2xl blur-lg opacity-50"></div>
-                      <div className="relative w-14 h-14 bg-gradient-to-br from-[#e09a68] to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-2xl blur-lg opacity-50"></div>
+                      <div className="relative w-14 h-14 bg-gradient-to-br from-[#ff8240] to-[#00f99d] rounded-2xl flex items-center justify-center shadow-lg">
                         <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
@@ -541,7 +541,7 @@ function AdminDashboardContent() {
                           placeholder="Enter username"
                           value={newUser.username}
                           onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
                           required
                         />
                       </div>
@@ -563,7 +563,7 @@ function AdminDashboardContent() {
                           placeholder="Enter password"
                           value={newUser.password}
                           onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
                           required
                         />
                       </div>
@@ -583,7 +583,7 @@ function AdminDashboardContent() {
                         <select
                           value={newUser.role}
                           onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
+                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
                         >
                           <option value="student">Student</option>
                           <option value="admin">Admin</option>
@@ -612,7 +612,7 @@ function AdminDashboardContent() {
                           type="date"
                           value={newUser.expires_at}
                           onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
                           required
                         />
                       </div>
@@ -634,8 +634,8 @@ function AdminDashboardContent() {
                         {availableSubscriptions.map((sub) => {
                           const isSelected = newUser.subscriptions.includes(sub);
                           const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
-                            math: { gradient: 'from-[#e09a68] to-[#e09a68]', ring: 'ring-[#e09a68]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            physics: { gradient: 'from-purple-500 to-pink-500', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                            math: { gradient: 'from-[#ff8240] to-[#ff8240]', ring: 'ring-[#ff8240]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                            physics: { gradient: 'from-[#00f99d] to-pink-500', ring: 'ring-[#00f99d]/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                             science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
                           };
                           const color = colors[sub] || colors.math;
@@ -647,7 +647,7 @@ function AdminDashboardContent() {
                               onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
                               className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                                 isSelected
-                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#d4834b]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
+                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#ff8240]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
                                   : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
                               }`}
                             >
@@ -671,9 +671,9 @@ function AdminDashboardContent() {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#d4834b] via-[#e09a68] to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[#e09a68]/25"
+                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[#ff8240]/25"
                     >
-                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#d4834b] via-[#e09a68] to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
+                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] px-6 py-4 transition-all group-hover:bg-opacity-0">
                         <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -729,7 +729,7 @@ function AdminDashboardContent() {
                       placeholder="Search by username..."
                       value={userSearchQuery}
                       onChange={(e) => setUserSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/20 focus:border-[#e09a68] focus:bg-white transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/20 focus:border-[#ff8240] focus:bg-white transition-all"
                     />
                     {userSearchQuery && (
                       <button
@@ -759,7 +759,7 @@ function AdminDashboardContent() {
                       {/* Card Header with gradient */}
                       <div className={`relative h-20 ${
                         user.role === 'admin' 
-                          ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600' 
+                          ? 'bg-gradient-to-br from-violet-500 via-[#00f99d] to-indigo-600' 
                           : 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800'
                       }`}>
                         {/* Pattern overlay */}
@@ -799,7 +799,7 @@ function AdminDashboardContent() {
                           <div className="relative">
                             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg border-4 border-white ${
                               user.role === 'admin'
-                                ? 'bg-gradient-to-br from-violet-400 to-purple-600 text-white'
+                                ? 'bg-gradient-to-br from-violet-400 to-[#00f99d] text-white'
                                 : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600'
                             }`}>
                               {user.username.charAt(0).toUpperCase()}
@@ -824,8 +824,8 @@ function AdminDashboardContent() {
                               <div className="flex flex-wrap gap-1.5">
                                 {user.subscriptions.map((sub) => {
                                   const subColors: Record<string, string> = {
-                                    math: 'bg-[#fae9dc] text-[#b86d3a] ring-[#f5d3b9]',
-                                    physics: 'bg-purple-100 text-purple-700 ring-purple-200',
+                                    math: 'bg-[#ffe8d9] text-[#e06620] ring-[#ffd4b8]',
+                                    physics: 'bg-purple-100 text-purple-700 ring-[#b3ffdb]',
                                     science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
                                   };
                                   return (
@@ -928,7 +928,7 @@ function AdminDashboardContent() {
                   <p className="text-slate-500">No users match "{userSearchQuery}"</p>
                   <button
                     onClick={() => setUserSearchQuery('')}
-                    className="mt-4 px-4 py-2 text-sm font-medium text-[#d4834b] hover:text-[#b86d3a] hover:bg-[#fdf6f1] rounded-lg transition-colors"
+                    className="mt-4 px-4 py-2 text-sm font-medium text-[#ff8240] hover:text-[#e06620] hover:bg-[#fff5f0] rounded-lg transition-colors"
                   >
                     Clear search
                   </button>
@@ -944,11 +944,11 @@ function AdminDashboardContent() {
         {activeTab === 'cards' && (
           <div className="space-y-6">
             {/* Background Container */}
-            <div className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-8 rounded-3xl bg-gradient-to-br from-slate-50 via-[#fdf6f1]/30 to-purple-50/30 overflow-hidden">
+            <div className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-8 rounded-3xl bg-gradient-to-br from-slate-50 via-[#fff5f0]/30 to-[#e6fff5]/30 overflow-hidden">
               {/* Decorative Elements */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#f5d3b9]/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ffd4b8]/20 to-[#b3ffdb]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-orange-200/20 to-pink-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-[#fae9dc]/10 to-[#f5d3b9]/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
+              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-[#ffe8d9]/10 to-[#ffd4b8]/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
               
               {/* Content */}
               <div className="relative space-y-6">
@@ -995,8 +995,8 @@ function AdminDashboardContent() {
                   </button>
                   {availableSubscriptions.map((sub) => {
                     const colors: Record<string, { active: string; inactive: string }> = {
-                      math: { active: 'bg-[#e09a68] text-white shadow-lg shadow-[#e09a68]/25', inactive: 'bg-[#fdf6f1] text-[#d4834b] hover:bg-[#fae9dc]' },
-                      physics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
+                      math: { active: 'bg-[#ff8240] text-white shadow-lg shadow-[#ff8240]/25', inactive: 'bg-[#fff5f0] text-[#ff8240] hover:bg-[#ffe8d9]' },
+                      physics: { active: 'bg-[#00f99d] text-white shadow-lg shadow-[#00f99d]/25', inactive: 'bg-[#e6fff5] text-[#00f99d] hover:bg-purple-100' },
                       science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
                     };
                     const color = colors[sub] || colors.math;
@@ -1049,8 +1049,8 @@ function AdminDashboardContent() {
                 return matchesSearch && matchesCategory;
               }).map((card) => {
                 const subColors: Record<string, string> = {
-                  math: 'from-[#e09a68] to-[#e09a68]',
-                  physics: 'from-purple-500 to-pink-500',
+                  math: 'from-[#ff8240] to-[#ff8240]',
+                  physics: 'from-[#00f99d] to-pink-500',
                   science: 'from-green-500 to-emerald-500',
                 };
                 const primarySub = card.required_subscriptions?.[0] || 'math';
@@ -1079,7 +1079,7 @@ function AdminDashboardContent() {
                             href={card.video_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 text-[#e09a68] hover:text-[#d4834b] hover:bg-[#fdf6f1] rounded-lg transition-colors"
+                            className="p-2 text-[#ff8240] hover:text-[#ff8240] hover:bg-[#fff5f0] rounded-lg transition-colors"
                             title="Watch video"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1113,8 +1113,8 @@ function AdminDashboardContent() {
                         <div className="flex flex-wrap gap-1.5">
                           {card.required_subscriptions.map((sub) => {
                             const tagColors: Record<string, string> = {
-                              math: 'bg-[#fdf6f1] text-[#b86d3a] ring-[#f5d3b9]',
-                              physics: 'bg-purple-50 text-purple-700 ring-purple-200',
+                              math: 'bg-[#fff5f0] text-[#e06620] ring-[#ffd4b8]',
+                              physics: 'bg-[#e6fff5] text-purple-700 ring-[#b3ffdb]',
                               science: 'bg-green-50 text-green-700 ring-green-200',
                             };
                             return (
@@ -1160,7 +1160,7 @@ function AdminDashboardContent() {
                                   window.location.reload();
                                 }
                               }}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-[#fdf6f1] text-[#d4834b] text-xs font-medium rounded-xl hover:bg-[#fae9dc] transition-colors"
+                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-[#fff5f0] text-[#ff8240] text-xs font-medium rounded-xl hover:bg-[#ffe8d9] transition-colors"
                               title="Print QR"
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1268,30 +1268,30 @@ function AdminDashboardContent() {
                   placeholder="User ID"
                   value={logFilters.userId}
                   onChange={(e) => setLogFilters({ ...logFilters, userId: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="text"
                   placeholder="Card ID"
                   value={logFilters.cardId}
                   onChange={(e) => setLogFilters({ ...logFilters, cardId: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="date"
                   value={logFilters.startDate}
                   onChange={(e) => setLogFilters({ ...logFilters, startDate: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="date"
                   value={logFilters.endDate}
                   onChange={(e) => setLogFilters({ ...logFilters, endDate: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                 />
                 <button
                   onClick={loadLogs}
-                  className="py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a] shadow-lg shadow-[#d4834b]/20"
+                  className="py-3 bg-[#ff8240] text-white font-semibold rounded-xl hover:bg-[#e06620] shadow-lg shadow-[#ff8240]/20"
                 >
                   Apply Filters
                 </button>
@@ -1351,7 +1351,7 @@ function AdminDashboardContent() {
                   type="text"
                   value={editForm.username}
                   onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   required
                 />
               </div>
@@ -1361,7 +1361,7 @@ function AdminDashboardContent() {
                   type="password"
                   value={editForm.password}
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   placeholder="Leave empty to keep current"
                 />
               </div>
@@ -1370,7 +1370,7 @@ function AdminDashboardContent() {
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                 >
                   <option value="student">Student</option>
                   <option value="admin">Admin</option>
@@ -1383,7 +1383,7 @@ function AdminDashboardContent() {
                   type="date"
                   value={editForm.expires_at}
                   onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   required
                 />
               </div>
@@ -1399,7 +1399,7 @@ function AdminDashboardContent() {
                         onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           editForm.subscriptions.includes(sub)
-                            ? 'bg-[#d4834b] text-white'
+                            ? 'bg-[#ff8240] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -1412,7 +1412,7 @@ function AdminDashboardContent() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a]"
+                  className="flex-1 py-3 bg-[#ff8240] text-white font-semibold rounded-xl hover:bg-[#e06620]"
                 >
                   Save Changes
                 </button>
@@ -1434,7 +1434,7 @@ function AdminDashboardContent() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="relative w-full max-w-2xl animate-in zoom-in-95 duration-200">
             {/* Gradient glow effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 rounded-3xl blur-lg opacity-30"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-pink-500 to-[#00f99d] rounded-3xl blur-lg opacity-30"></div>
             
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
@@ -1550,8 +1550,8 @@ function AdminDashboardContent() {
                       {availableSubscriptions.map((sub) => {
                         const isSelected = newCard.required_subscriptions.includes(sub);
                         const colors: Record<string, { gradient: string; icon: string }> = {
-                          math: { gradient: 'from-[#e09a68] to-[#e09a68]', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                          physics: { gradient: 'from-purple-500 to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                          math: { gradient: 'from-[#ff8240] to-[#ff8240]', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                          physics: { gradient: 'from-[#00f99d] to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                           science: { gradient: 'from-green-500 to-emerald-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
                         };
                         const color = colors[sub] || colors.math;
@@ -1631,7 +1631,7 @@ function AdminDashboardContent() {
                   type="text"
                   value={editCardForm.title}
                   onChange={(e) => setEditCardForm({ ...editCardForm, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   placeholder="Card title (optional)"
                 />
               </div>
@@ -1641,7 +1641,7 @@ function AdminDashboardContent() {
                   type="url"
                   value={editCardForm.video_url}
                   onChange={(e) => setEditCardForm({ ...editCardForm, video_url: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   placeholder="YouTube URL"
                   required
                 />
@@ -1652,7 +1652,7 @@ function AdminDashboardContent() {
                   type="text"
                   value={editCardForm.subject}
                   onChange={(e) => setEditCardForm({ ...editCardForm, subject: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
                   placeholder="e.g., Physics, Math"
                 />
               </div>
@@ -1666,7 +1666,7 @@ function AdminDashboardContent() {
                       onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         editCardForm.required_subscriptions.includes(sub)
-                          ? 'bg-[#d4834b] text-white'
+                          ? 'bg-[#ff8240] text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -1679,7 +1679,7 @@ function AdminDashboardContent() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a]"
+                  className="flex-1 py-3 bg-[#ff8240] text-white font-semibold rounded-xl hover:bg-[#e06620]"
                 >
                   Save Changes
                 </button>
@@ -1704,7 +1704,7 @@ export default function AdminDashboard() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-500 text-sm">Loading dashboard...</p>
         </div>
       </div>

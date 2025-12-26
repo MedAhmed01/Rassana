@@ -34,7 +34,7 @@ function HomeContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-500 text-sm">Loading...</p>
         </div>
       </div>
@@ -42,12 +42,12 @@ function HomeContent() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-[#fdf6f1]">
+    <div className="min-h-screen bg-gradient-to-b from-white to-[#fff5f0]">
       {/* Header */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#d4834b] rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#ff8240] rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
@@ -56,7 +56,7 @@ function HomeContent() {
           </div>
           <button
             onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => router.push('/login'))}
-            className="text-sm text-gray-500 hover:text-[#d4834b] font-medium"
+            className="text-sm text-gray-500 hover:text-[#ff8240] font-medium"
           >
             Sign out
           </button>
@@ -67,7 +67,7 @@ function HomeContent() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to <span className="text-[#d4834b]">Rassana CardVideo</span>
+            Welcome to <span className="text-[#ff8240]">Rassana CardVideo</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Access video explanations instantly by scanning the QR code on your learning card.
@@ -75,7 +75,7 @@ function HomeContent() {
         </div>
 
         {/* How it works */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#d4834b]/5 border border-gray-100 p-6 sm:p-10 max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl shadow-[#ff8240]/5 border border-gray-100 p-6 sm:p-10 max-w-2xl mx-auto">
           <h2 className="text-xl font-bold text-gray-900 mb-8 text-center">
             How it works
           </h2>
@@ -108,7 +108,7 @@ function HomeContent() {
               }
             ].map((item, index) => (
               <div key={index} className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-[#d4834b] rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 w-12 h-12 bg-[#ff8240] rounded-xl flex items-center justify-center text-white font-bold text-lg">
                   {item.step}
                 </div>
                 <div className="flex-1 pt-1">
@@ -146,7 +146,7 @@ export default function Home() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-500 text-sm">Loading...</p>
         </div>
       </div>
