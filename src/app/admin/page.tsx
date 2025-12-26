@@ -51,6 +51,9 @@ export default function AdminDashboard() {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(true);
   const [isUsersListOpen, setIsUsersListOpen] = useState(true);
+  const [cardSearchQuery, setCardSearchQuery] = useState('');
+  const [cardCategoryFilter, setCardCategoryFilter] = useState<string>('all');
+  const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
   
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
@@ -229,15 +232,25 @@ export default function AdminDashboard() {
     if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
     
     setError('');
-    const response = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
-    
-    if (!response.ok) {
+    try {
+      console.log('Deleting user:', userId);
+      const response = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
       const data = await response.json();
-      setError(data.error || 'Failed to delete user');
-      return;
+      console.log('Delete response:', data);
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to delete user');
+        console.error('Delete user error:', data);
+        return;
+      }
+      
+      // Remove user from local state immediately
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      console.log('User deleted successfully');
+    } catch (err) {
+      console.error('Delete user error:', err);
+      setError('Network error while deleting user');
     }
-    
-    loadUsers();
   }
   
   function startEditUser(user: User) {
@@ -599,7 +612,8 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Expiration Date Field */}
+                    {/* Expiration Date Field - Only for students */}
+                    {newUser.role === 'student' && (
                     <div className="group">
                       <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
                         Expires On
@@ -619,6 +633,7 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* Subscriptions Section */}
@@ -944,320 +959,315 @@ export default function AdminDashboard() {
         {/* Cards Tab */}
         {activeTab === 'cards' && (
           <div className="space-y-6">
-            {/* Create Card Form - Modern Glass Design */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
-              {/* Animated gradient border */}
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 opacity-20 blur-xl"></div>
+            {/* Background Container */}
+            <div className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-8 rounded-3xl bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 overflow-hidden">
+              {/* Decorative Elements */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-orange-200/20 to-pink-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cyan-200/10 to-blue-200/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
               
-              <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
-                {/* Header */}
-                <div className="p-6 sm:p-8 pb-0">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl blur-lg opacity-50"></div>
-                      <div className="relative w-14 h-14 bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-                        <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white">Create New Card</h2>
-                      <p className="text-slate-400 text-sm mt-0.5">Add a new QR card with video content</p>
-                    </div>
+              {/* Content */}
+              <div className="relative space-y-6">
+            {/* Search & Filter Bar */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Search cards by title or ID..."
+                    value={cardSearchQuery}
+                    onChange={(e) => setCardSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                  />
+                  {cardSearchQuery && (
+                    <button
+                      onClick={() => setCardSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
-                {/* Form Content */}
-                <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-                  <form onSubmit={handleCreateCard} className="space-y-6">
-                    {/* Input Fields Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                      {/* Card ID Field */}
-                      <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                          Card ID
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                          </div>
-                          <input
-                            type="text"
-                            placeholder="e.g., PHY-001"
-                            value={newCard.card_id}
-                            onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
-                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {/* Video URL Field */}
-                      <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                          YouTube URL
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <input
-                            type="url"
-                            placeholder="https://youtube.com/..."
-                            value={newCard.video_url}
-                            onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
-                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {/* Title Field */}
-                      <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                          Title (Optional)
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </div>
-                          <input
-                            type="text"
-                            placeholder="Card title"
-                            value={newCard.title}
-                            onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
-                            className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-slate-800 transition-all duration-200"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Subscriptions Section */}
-                    <div className="pt-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <svg className="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <label className="text-sm font-semibold text-white">Required Subscriptions</label>
-                        <span className="text-xs text-slate-500 ml-auto">Students need at least one</span>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        {availableSubscriptions.map((sub) => {
-                          const isSelected = newCard.required_subscriptions.includes(sub);
-                          const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
-                            math: { gradient: 'from-blue-500 to-cyan-500', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            physics: { gradient: 'from-purple-500 to-pink-500', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                          };
-                          const color = colors[sub] || colors.math;
-                          
-                          return (
-                            <button
-                              key={sub}
-                              type="button"
-                              onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
-                              className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                                isSelected
-                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg scale-[1.02]`
-                                  : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
-                              }`}
-                            >
-                              <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
-                              </svg>
-                              <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
-                              {isSelected && (
-                                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-3 ml-1">Leave empty to allow all students to access this card</p>
-                    </div>
-
-                    {/* Submit Button */}
-                    <div className="pt-4">
+                {/* Category Filter */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setCardCategoryFilter('all')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      cardCategoryFilter === 'all'
+                        ? 'bg-slate-900 text-white shadow-lg'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {availableSubscriptions.map((sub) => {
+                    const colors: Record<string, { active: string; inactive: string }> = {
+                      math: { active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
+                      physics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
+                      science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+                    };
+                    const color = colors[sub] || colors.math;
+                    return (
                       <button
-                        type="submit"
-                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-600 via-pink-500 to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/25"
+                        key={sub}
+                        onClick={() => setCardCategoryFilter(sub)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          cardCategoryFilter === sub ? color.active : color.inactive
+                        }`}
                       >
-                        <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-orange-600 via-pink-500 to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
-                          <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                          </svg>
-                          <span className="font-semibold text-white text-base">Create Card</span>
-                        </div>
-                        {/* Shine effect */}
-                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
                       </button>
-                    </div>
-                  </form>
+                    );
+                  })}
                 </div>
+
+                {/* Add Card Button */}
+                <button
+                  onClick={() => setIsCreateCardOpen(true)}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline">Add Card</span>
+                </button>
+              </div>
+
+              {/* Results count */}
+              <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                {cards.filter(card => {
+                  const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
+                    (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
+                  const matchesCategory = cardCategoryFilter === 'all' ||
+                    (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
+                  return matchesSearch && matchesCategory;
+                }).length} cards found
               </div>
             </div>
 
-            {/* Cards Grid - Compact Design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {cards.map((card) => (
-                <div key={card.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                  {/* Compact Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="inline-flex px-2 py-0.5 text-xs font-bold rounded bg-gray-900 text-white whitespace-nowrap">
-                          {card.card_id}
-                        </span>
-                        <h3 className="font-medium text-sm text-gray-900 truncate">{card.title || 'Untitled'}</h3>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <a
-                          href={card.video_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                          title="Watch video"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </a>
-                        <button
-                          onClick={() => startEditCard(card)}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCard(card)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    {card.required_subscriptions && card.required_subscriptions.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {card.required_subscriptions.map((sub) => (
-                          <span key={sub} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 text-green-700">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Compact QR Section */}
-                  <div className="p-3 bg-gray-50">
-                    {loadingQr[card.card_id] ? (
-                      <div className="flex items-center justify-center py-6">
-                        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    ) : cardQrCodes[card.card_id] ? (
-                      <>
-                        {/* QR Code Display */}
-                        <div id={`qr-print-${card.card_id}`} className="bg-white rounded-lg p-3 mb-2">
-                          <img 
-                            src={cardQrCodes[card.card_id]} 
-                            alt={`QR ${card.card_id}`} 
-                            className="w-32 h-32 mx-auto"
-                          />
-                          <p className="text-[10px] text-gray-500 text-center mt-2 font-mono break-all">{getAccessUrl(card.card_id)}</p>
+            {/* Cards Grid - Modern Design */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {cards.filter(card => {
+                const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
+                  (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
+                const matchesCategory = cardCategoryFilter === 'all' ||
+                  (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
+                return matchesSearch && matchesCategory;
+              }).map((card) => {
+                const subColors: Record<string, string> = {
+                  math: 'from-blue-500 to-cyan-500',
+                  physics: 'from-purple-500 to-pink-500',
+                  science: 'from-green-500 to-emerald-500',
+                };
+                const primarySub = card.required_subscriptions?.[0] || 'math';
+                const gradientColor = subColors[primarySub] || subColors.math;
+                
+                return (
+                  <div key={card.id} className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
+                    {/* Gradient Top Bar */}
+                    <div className={`h-1.5 bg-gradient-to-r ${gradientColor}`}></div>
+                    
+                    {/* Card Header */}
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-lg bg-gradient-to-r ${gradientColor} text-white shadow-sm`}>
+                              {card.card_id}
+                            </span>
+                          </div>
+                          <h3 className="font-semibold text-gray-900 text-lg truncate">{card.title || 'Untitled'}</h3>
                         </div>
                         
-                        {/* Compact Action Buttons */}
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              const printContent = document.getElementById(`qr-print-${card.card_id}`);
-                              const originalContents = document.body.innerHTML;
-                              if (printContent) {
-                                document.body.innerHTML = printContent.outerHTML;
-                                window.print();
-                                document.body.innerHTML = originalContents;
-                                window.location.reload();
-                              }
-                            }}
-                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
-                            title="Print QR"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                            Print
-                          </button>
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <a
-                            href={cardQrCodes[card.card_id]}
-                            download={`qr-${card.card_id}.png`}
-                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-900 text-white text-xs font-medium rounded hover:bg-gray-800"
-                            title="Download"
+                            href={card.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Watch video"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            Save
                           </a>
                           <button
-                            onClick={() => regenerateQrCode(card.card_id)}
-                            className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600"
-                            title="Regenerate"
+                            onClick={() => startEditCard(card)}
+                            className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Edit"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
                           <button
-                            onClick={() => copyAccessLink(card.card_id)}
-                            className={`flex items-center justify-center px-2 py-1.5 text-xs font-medium rounded transition-colors ${
-                              copiedCardId === card.card_id
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                            title="Copy link"
+                            onClick={() => handleDeleteCard(card)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
                           >
-                            {copiedCardId === card.card_id ? (
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                            )}
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         </div>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => loadQrCode(card.card_id)}
-                        className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-orange-500 text-white text-sm font-medium rounded hover:bg-orange-600"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                        </svg>
-                        Generate QR
-                      </button>
-                    )}
+                      </div>
+                      
+                      {/* Subscription Tags */}
+                      {card.required_subscriptions && card.required_subscriptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {card.required_subscriptions.map((sub) => {
+                            const tagColors: Record<string, string> = {
+                              math: 'bg-blue-50 text-blue-700 ring-blue-200',
+                              physics: 'bg-purple-50 text-purple-700 ring-purple-200',
+                              science: 'bg-green-50 text-green-700 ring-green-200',
+                            };
+                            return (
+                              <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tagColors[sub] || tagColors.math}`}>
+                                {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* QR Section */}
+                    <div className="px-5 pb-5">
+                      {loadingQr[card.card_id] ? (
+                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl">
+                          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : cardQrCodes[card.card_id] ? (
+                        <div className="space-y-4">
+                          {/* QR Code Display */}
+                          <div id={`qr-print-${card.card_id}`} className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+                            <div className="bg-white rounded-lg p-3 shadow-sm mx-auto w-fit">
+                              <img 
+                                src={cardQrCodes[card.card_id]} 
+                                alt={`QR ${card.card_id}`} 
+                                className="w-36 h-36"
+                              />
+                            </div>
+                            <p className="text-[11px] text-gray-400 text-center mt-3 font-mono truncate px-2">{getAccessUrl(card.card_id)}</p>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="grid grid-cols-4 gap-2">
+                            <button
+                              onClick={() => {
+                                const printContent = document.getElementById(`qr-print-${card.card_id}`);
+                                const originalContents = document.body.innerHTML;
+                                if (printContent) {
+                                  document.body.innerHTML = printContent.outerHTML;
+                                  window.print();
+                                  document.body.innerHTML = originalContents;
+                                  window.location.reload();
+                                }
+                              }}
+                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-xl hover:bg-blue-100 transition-colors"
+                              title="Print QR"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                              <span>Print</span>
+                            </button>
+                            <a
+                              href={cardQrCodes[card.card_id]}
+                              download={`qr-${card.card_id}.png`}
+                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                              title="Download"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              <span>Save</span>
+                            </a>
+                            <button
+                              onClick={() => regenerateQrCode(card.card_id)}
+                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-orange-50 text-orange-600 text-xs font-medium rounded-xl hover:bg-orange-100 transition-colors"
+                              title="Regenerate"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              <span>Refresh</span>
+                            </button>
+                            <button
+                              onClick={() => copyAccessLink(card.card_id)}
+                              className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium rounded-xl transition-all ${
+                                copiedCardId === card.card_id
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                              title="Copy link"
+                            >
+                              {copiedCardId === card.card_id ? (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => loadQrCode(card.card_id)}
+                          className={`w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r ${gradientColor} text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all`}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                          </svg>
+                          Generate QR Code
+                        </button>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+            
+            {/* Empty State */}
+            {cards.filter(card => {
+              const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
+                (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
+              const matchesCategory = cardCategoryFilter === 'all' ||
+                (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
+              return matchesSearch && matchesCategory;
+            }).length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
                 </div>
-              ))}
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">No cards found</h3>
+                <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              </div>
+            )}
+              </div>
             </div>
           </div>
         )}
@@ -1382,6 +1392,7 @@ export default function AdminDashboard() {
                   <option value="admin">Admin</option>
                 </select>
               </div>
+              {editForm.role === 'student' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
                 <input
@@ -1392,6 +1403,7 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
+              )}
               {editForm.role === 'student' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subscriptions</label>
@@ -1429,6 +1441,186 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Card Modal */}
+      {isCreateCardOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl animate-in zoom-in-95 duration-200">
+            {/* Gradient glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 rounded-3xl blur-lg opacity-30"></div>
+            
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="relative p-6 pb-0">
+                {/* Decorative gradient */}
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-orange-500/20 via-pink-500/10 to-transparent"></div>
+                
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 rounded-xl blur-lg opacity-50"></div>
+                      <div className="relative w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Create New Card</h2>
+                      <p className="text-slate-400 text-sm">Add a new QR card with video content</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCreateCardOpen(false)}
+                    className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Content */}
+              <div className="p-6">
+                <form onSubmit={handleCreateCard} className="space-y-5">
+                  {/* Card ID & Title Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Card ID
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="e.g., PHY-001"
+                          value={newCard.card_id}
+                          onChange={(e) => setNewCard({ ...newCard, card_id: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="group">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        Title (Optional)
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Card title"
+                          value={newCard.title}
+                          onChange={(e) => setNewCard({ ...newCard, title: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Video URL */}
+                  <div className="group">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                      YouTube URL
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-slate-500 group-focus-within:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={newCard.video_url}
+                        onChange={(e) => setNewCard({ ...newCard, video_url: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subscriptions */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <label className="text-sm font-semibold text-white">Required Subscriptions</label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSubscriptions.map((sub) => {
+                        const isSelected = newCard.required_subscriptions.includes(sub);
+                        const colors: Record<string, { gradient: string; icon: string }> = {
+                          math: { gradient: 'from-blue-500 to-cyan-500', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                          physics: { gradient: 'from-purple-500 to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                          science: { gradient: 'from-green-500 to-emerald-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                        };
+                        const color = colors[sub] || colors.math;
+                        
+                        return (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                              isSelected
+                                ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg`
+                                : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50`
+                            }`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
+                            </svg>
+                            <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                            {isSelected && (
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">Leave empty to allow all students</p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateCardOpen(false)}
+                      className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 font-medium rounded-xl hover:bg-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Create Card
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       )}

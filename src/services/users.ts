@@ -23,19 +23,31 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
       return { success: false, error: 'Role must be either admin or student' };
     }
     
-    if (!expires_at) {
-      return { success: false, error: 'Expiration date is required' };
+    // For students, expiration date is required. For admins, set to far future (100 years)
+    let finalExpiresAt = expires_at;
+    if (role === 'admin') {
+      const farFuture = new Date();
+      farFuture.setFullYear(farFuture.getFullYear() + 100);
+      finalExpiresAt = farFuture.toISOString();
+    } else if (!expires_at) {
+      return { success: false, error: 'Expiration date is required for students' };
     }
     
-    const expirationDate = new Date(expires_at);
+    const expirationDate = new Date(finalExpiresAt);
     if (isNaN(expirationDate.getTime())) {
       return { success: false, error: 'Invalid expiration date' };
     }
     
     // Use admin client for user creation
     const adminClient = createAdminClient();
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not configured. Check SUPABASE_SERVICE_ROLE_KEY.' };
+    }
+    
     const supabase = await createServerSupabaseClient();
     const email = usernameToEmail(username);
+    
+    console.log('Creating auth user with email:', email);
     
     // Create auth user
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -46,8 +58,12 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
     });
     
     if (authError) {
+      console.error('Auth user creation error:', authError);
       if (authError.message.includes('already') || authError.message.includes('exists')) {
         return { success: false, error: 'Username already exists' };
+      }
+      if (authError.message.includes('Database error')) {
+        return { success: false, error: 'Database error - please check Supabase configuration and try again' };
       }
       return { success: false, error: authError.message };
     }
@@ -63,8 +79,8 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
         user_id: authData.user.id,
         username,
         role,
-        subscriptions: subscriptions || [],
-        expires_at,
+        subscriptions: role === 'admin' ? [] : (subscriptions || []),
+        expires_at: finalExpiresAt,
       });
     
     if (profileError) {
@@ -84,16 +100,17 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
 }
 
 /**
- * Get all users (admin only)
+ * Get all users (admin only - bypasses RLS)
  */
 export async function getAllUsers(): Promise<UserProfile[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
     .order('created_at', { ascending: false });
   
   if (error || !data) {
+    console.error('Error fetching users:', error);
     return [];
   }
   
@@ -101,10 +118,10 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 }
 
 /**
- * Get a user by ID
+ * Get a user by ID (admin operation - bypasses RLS)
  */
 export async function getUserById(userId: string): Promise<UserProfile | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
@@ -119,10 +136,10 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
 }
 
 /**
- * Get a user by username
+ * Get a user by username (admin operation - bypasses RLS)
  */
 export async function getUserByUsername(username: string): Promise<UserProfile | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
@@ -157,13 +174,13 @@ export async function deleteUser(userId: string): Promise<{ success: boolean; er
 }
 
 /**
- * Update user expiration date (admin only)
+ * Update user expiration date (admin only - bypasses RLS)
  */
 export async function updateUserExpiration(
   userId: string,
   expiresAt: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('user_profiles')
     .update({ expires_at: expiresAt })

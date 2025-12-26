@@ -1,15 +1,15 @@
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase';
 import type { AccessLog, AccessLogFilters } from '@/types';
 
 /**
- * Log a video access event
+ * Log a video access event (uses admin client to bypass RLS)
  */
 export async function logVideoAccess(
   userId: string,
   cardId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminClient();
     const { error } = await supabase
       .from('access_logs')
       .insert({
@@ -29,12 +29,11 @@ export async function logVideoAccess(
 }
 
 /**
- * Get access logs with optional filtering
- * Admin only - enforced by RLS
+ * Get access logs with optional filtering (admin only - bypasses RLS)
  */
 export async function getAccessLogs(filters?: AccessLogFilters): Promise<AccessLog[]> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminClient();
     let query = supabase
       .from('access_logs')
       .select('*');
@@ -70,12 +69,11 @@ export async function getAccessLogs(filters?: AccessLogFilters): Promise<AccessL
 }
 
 /**
- * Get access logs with user and card details
- * Admin only - enforced by RLS
+ * Get access logs with user and card details (admin only - bypasses RLS)
  */
 export async function getAccessLogsWithDetails(filters?: AccessLogFilters): Promise<AccessLog[]> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminClient();
     let query = supabase
       .from('access_logs')
       .select(`

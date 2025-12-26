@@ -25,9 +25,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { username, password, role, subscriptions, expires_at } = body;
     
-    if (!username || !password || !role || !expires_at) {
+    // For admins, expires_at is not required
+    if (!username || !password || !role) {
       return NextResponse.json(
-        { error: 'All fields are required: username, password, role, expires_at' },
+        { error: 'Username, password, and role are required' },
+        { status: 400 }
+      );
+    }
+    
+    // For students, expires_at is required
+    if (role === 'student' && !expires_at) {
+      return NextResponse.json(
+        { error: 'Expiration date is required for students' },
         { status: 400 }
       );
     }
@@ -37,7 +46,7 @@ export async function POST(request: NextRequest) {
       password,
       role,
       subscriptions: subscriptions || [],
-      expires_at: new Date(expires_at).toISOString(),
+      expires_at: expires_at ? new Date(expires_at).toISOString() : undefined,
     });
     
     if (!result.success) {
