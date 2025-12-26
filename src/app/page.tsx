@@ -86,14 +86,14 @@ function HomeContent() {
       <div className="relative min-h-screen flex flex-col">
         {/* Header */}
         <header className="px-4 py-4 sm:py-6">
-          <div className="max-w-lg mx-auto flex justify-between items-center">
+          <div className="max-w-lg mx-auto flex justify-center items-center">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 bg-gradient-to-br from-[#ff8240] to-[#00f99d] rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </div>
-              <span className="font-bold text-white text-lg">Rassana</span>
+              <span className="font-bold text-white text-lg">بطاقات رصانة || Rassana Cards</span>
             </div>
           </div>
         </header>
