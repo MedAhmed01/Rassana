@@ -31,7 +31,7 @@ export interface UserCredentials {
   password: string;
   role: 'admin' | 'student';
   subscriptions?: Subscription[];
-  expires_at: string;
+  expires_at?: string;
 }
 
 // Supabase session type
