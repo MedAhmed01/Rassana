@@ -505,20 +505,24 @@ function HomeContent() {
           {/* Video Container */}
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden relative">
-              <div id="inline-player" className="absolute inset-0 w-full h-full" />
+              {/* YouTube Player */}
+              <div id="inline-player" className="absolute inset-0 w-full h-full pointer-events-none" />
+              
+              {/* Transparent overlay to block YouTube controls */}
+              <div className="absolute inset-0 z-10" onClick={togglePlay} />
               
               {/* Loading Overlay */}
               {!playerReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-20">
                   <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
 
               {/* Center Play/Pause Button */}
               {playerReady && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
                   <button
-                    onClick={togglePlay}
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                     className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all pointer-events-auto ${
                       isPlaying ? 'opacity-0 hover:opacity-100 bg-black/60' : 'opacity-100 bg-[#ff8240]'
                     }`}
