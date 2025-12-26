@@ -432,16 +432,22 @@ export default function VideoAccessPage() {
             className={`relative bg-black overflow-hidden ${isFullscreenMode ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
             style={isFullscreenMode ? { height: '100vh' } : { paddingBottom: '56.25%' }}
             onMouseMove={() => setShowControls(true)}
+            onTouchStart={handleDoubleTap}
           >
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
+            {/* Clickable overlay for showing controls */}
+            <div 
+              className="absolute inset-0 z-10"
+              onClick={() => setShowControls(true)}
+            />
+            
             {/* Center Controls - Skip Back, Play/Pause, Skip Forward */}
             <div 
-              className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-              onClick={handleDoubleTap}
+              className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 pointer-events-none ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
             >
-              <div className="flex items-center gap-4 sm:gap-8">
+              <div className="flex items-center gap-4 sm:gap-8 pointer-events-auto">
                 {/* Skip Backward 10s */}
                 <button 
                   onClick={(e) => { e.stopPropagation(); skipBackward(); }}
@@ -510,29 +516,29 @@ export default function VideoAccessPage() {
             </div>
 
             {/* Bottom Controls */}
-            <div className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="bg-gradient-to-t from-black/90 to-transparent pt-10 pb-4 px-4">
+            <div className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-3 pointer-events-auto">
                 {/* Progress bar */}
                 <div 
                   ref={progressRef}
-                  className="h-1.5 bg-gray-600 rounded-full mb-4 cursor-pointer group"
+                  className="h-1 bg-gray-600 rounded-full mb-2 cursor-pointer group"
                   onClick={(e) => { e.stopPropagation(); handleSeek(e); }}
                 >
                   <div className="h-full bg-[#d4834b] rounded-full relative" style={{ width: `${progress}%` }}>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#e09a68] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#e09a68] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
                 
                 {/* Controls row */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {/* Volume - hidden on mobile */}
                     <div className="hidden sm:flex items-center gap-2 group">
-                      <button onClick={(e) => { e.stopPropagation(); toggleMute(); }} className="text-white hover:text-[#e09a68] p-1">
+                      <button onClick={(e) => { e.stopPropagation(); toggleMute(); }} className="text-white hover:text-[#e09a68] p-0.5">
                         {isMuted || volume === 0 ? (
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
                         ) : (
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                         )}
                       </button>
                       <input
@@ -542,25 +548,25 @@ export default function VideoAccessPage() {
                         value={isMuted ? 0 : volume}
                         onChange={handleVolumeChange}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-0 group-hover:w-20 transition-all duration-200 accent-[#d4834b]"
+                        className="w-0 group-hover:w-16 transition-all duration-200 accent-[#d4834b]"
                       />
                     </div>
                     
                     {/* Time */}
-                    <span className="text-white text-sm ml-2">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                    <span className="text-white text-xs ml-1">{formatTime(currentTime)} / {formatTime(duration)}</span>
                   </div>
 
                   {/* Right side controls */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     {/* Fullscreen - hidden on iPhone (not supported) */}
                     {!isIPhone && (
-                      <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="text-white hover:text-[#e09a68] p-1" title="Plein écran">
+                      <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="text-white hover:text-[#e09a68] p-0.5" title="Plein écran">
                         {isFullscreen ? (
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
                           </svg>
                         ) : (
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
                           </svg>
                         )}
@@ -570,10 +576,10 @@ export default function VideoAccessPage() {
                     {isIPhone && isPseudoFullscreen && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); setIsPseudoFullscreen(false); }} 
-                        className="text-white hover:text-[#e09a68] p-1" 
+                        className="text-white hover:text-[#e09a68] p-0.5" 
                         title="Exit fullscreen"
                       >
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
                         </svg>
                       </button>
