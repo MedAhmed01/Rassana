@@ -769,7 +769,7 @@ function AdminDashboardContent() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Search by username..."
+                      placeholder="Search by username or phone..."
                       value={userSearchQuery}
                       onChange={(e) => setUserSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/20 focus:border-[#ff8240] focus:bg-white transition-all"
@@ -789,7 +789,11 @@ function AdminDashboardContent() {
                   {/* Users Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {users
-                      .filter(user => user.username.toLowerCase().includes(userSearchQuery.toLowerCase()))
+                      .filter(user => {
+                        const query = userSearchQuery.toLowerCase();
+                        return user.username.toLowerCase().includes(query) || 
+                               (user.phone && user.phone.toLowerCase().includes(query));
+                      })
                       .map((user) => {
                   const isExpired = new Date(user.expires_at) < new Date();
                   const isExpiringSoon = !isExpired && new Date(user.expires_at) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -971,7 +975,11 @@ function AdminDashboardContent() {
               )}
               
               {/* No Search Results */}
-              {users.length > 0 && users.filter(user => user.username.toLowerCase().includes(userSearchQuery.toLowerCase())).length === 0 && (
+              {users.length > 0 && users.filter(user => {
+                const query = userSearchQuery.toLowerCase();
+                return user.username.toLowerCase().includes(query) || 
+                       (user.phone && user.phone.toLowerCase().includes(query));
+              }).length === 0 && (
                 <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
                   <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

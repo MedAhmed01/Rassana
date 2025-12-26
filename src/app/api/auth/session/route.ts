@@ -19,6 +19,7 @@ export async function GET() {
       authenticated: true,
       role: validation.role,
       username: profile?.username,
+      phone: profile?.phone,
       subscriptions: profile?.subscriptions || [],
       expires_at: profile?.expires_at,
     });

@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 interface VideoData {
   videoUrl: string;
   title?: string;
-  username?: string;
+  phone?: string;
 }
 
 interface WatchProgress {
@@ -191,7 +191,7 @@ function VideoAccessContent() {
         }
         
         if (data.videoUrl) {
-          setVideoData({ videoUrl: data.videoUrl, title: data.title, username: data.username });
+          setVideoData({ videoUrl: data.videoUrl, title: data.title, phone: data.phone });
           setLoading(false);
         } else {
           setError('Video URL not found');
@@ -598,9 +598,9 @@ function VideoAccessContent() {
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
             {/* Watermark */}
-            {videoData.username && (
-              <div className="absolute bottom-16 right-4 z-40 pointer-events-none select-none">
-                <span className="text-white/30 text-xs font-medium tracking-wide">{videoData.username}</span>
+            {videoData.phone && (
+              <div className="absolute top-4 right-4 z-40 pointer-events-none select-none">
+                <span className="text-white/20 text-[10px] font-medium tracking-wide">{videoData.phone}</span>
               </div>
             )}
             
