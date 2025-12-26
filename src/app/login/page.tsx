@@ -89,8 +89,8 @@ function LoginForm() {
               </div>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-              Welcome Back
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              بطاقات رصانة || Rassana Cards
             </h1>
             <p className="text-[#ffd4b8]/70 text-base sm:text-lg">
               Sign in to access your video content
