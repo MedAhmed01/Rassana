@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface UserData {
@@ -17,6 +17,13 @@ interface ContinueWatchingData {
   duration_seconds: number;
   last_watched_at: string;
   video_url?: string;
+}
+
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
 }
 
 function extractYouTubeId(url: string): string | null {
@@ -51,7 +58,6 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-// LocalStorage key for continue watching
 const CONTINUE_WATCHING_KEY = 'rassana_continue_watching';
 
 function HomeContent() {
@@ -60,20 +66,157 @@ function HomeContent() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [continueWatching, setContinueWatching] = useState<ContinueWatchingData | null>(null);
+  
+  // Video Player Modal State
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const playerRef = useRef<any>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
-  // Load continue watching from localStorage
   const loadContinueWatching = () => {
     try {
       const stored = localStorage.getItem(CONTINUE_WATCHING_KEY);
       if (stored) {
-        const data = JSON.parse(stored) as ContinueWatchingData;
-        setContinueWatching(data);
+        setContinueWatching(JSON.parse(stored));
       }
     } catch (err) {
       console.error('Failed to load continue watching:', err);
     }
   };
-  
+
+  // Save progress to localStorage
+  const saveProgress = useCallback((time: number, dur: number) => {
+    if (!continueWatching || dur <= 0) return;
+    try {
+      const data = {
+        ...continueWatching,
+        progress_seconds: time,
+        duration_seconds: dur,
+        last_watched_at: new Date().toISOString(),
+      };
+      localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(data));
+      setContinueWatching(data);
+    } catch (err) {
+      console.error('Failed to save progress:', err);
+    }
+  }, [continueWatching]);
+
+  // Initialize YouTube Player
+  const initPlayer = useCallback(() => {
+    if (!continueWatching?.video_url) return;
+    const videoId = extractYouTubeId(continueWatching.video_url);
+    if (!videoId) return;
+
+    const startTime = continueWatching.progress_seconds || 0;
+
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+
+    const createPlayer = () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+      }
+      playerRef.current = new window.YT.Player('inline-player', {
+        videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+          start: Math.floor(startTime),
+        },
+        events: {
+          onReady: (e: any) => {
+            setPlayerReady(true);
+            setDuration(e.target.getDuration());
+            setCurrentTime(startTime);
+            e.target.playVideo();
+            setIsPlaying(true);
+          },
+          onStateChange: (e: any) => {
+            setIsPlaying(e.data === window.YT.PlayerState.PLAYING);
+          },
+        },
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = createPlayer;
+    }
+  }, [continueWatching]);
+
+  // Update time periodically
+  useEffect(() => {
+    if (!showPlayer || !playerReady) return;
+    const interval = setInterval(() => {
+      if (playerRef.current?.getCurrentTime) {
+        const time = playerRef.current.getCurrentTime();
+        const dur = playerRef.current.getDuration();
+        setCurrentTime(time);
+        setDuration(dur);
+        if (isPlaying) saveProgress(time, dur);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showPlayer, playerReady, isPlaying, saveProgress]);
+
+  // Open player
+  const openPlayer = () => {
+    setShowPlayer(true);
+    setPlayerReady(false);
+    setTimeout(initPlayer, 100);
+  };
+
+  // Close player
+  const closePlayer = () => {
+    if (playerRef.current) {
+      const time = playerRef.current.getCurrentTime();
+      const dur = playerRef.current.getDuration();
+      saveProgress(time, dur);
+      playerRef.current.destroy();
+      playerRef.current = null;
+    }
+    setShowPlayer(false);
+    setPlayerReady(false);
+    setIsPlaying(false);
+  };
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+    if (isPlaying) {
+      playerRef.current.pauseVideo();
+    } else {
+      playerRef.current.playVideo();
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || !playerRef.current || !duration) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    const time = percent * duration;
+    playerRef.current.seekTo(time, true);
+    setCurrentTime(time);
+  };
+
+  const skip = (seconds: number) => {
+    if (!playerRef.current) return;
+    const newTime = Math.max(0, Math.min(currentTime + seconds, duration));
+    playerRef.current.seekTo(newTime, true);
+    setCurrentTime(newTime);
+  };
+
   useEffect(() => {
     async function checkSession() {
       try {
@@ -91,7 +234,6 @@ function HomeContent() {
               expires_at: data.expires_at || '',
             });
             setLoading(false);
-            // Load continue watching from localStorage
             loadContinueWatching();
           }
         } else {
@@ -104,15 +246,10 @@ function HomeContent() {
     
     checkSession();
     
-    // Refresh when window gets focus
     const handleFocus = () => loadContinueWatching();
     window.addEventListener('focus', handleFocus);
-    
-    // Listen for storage changes (from video page)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === CONTINUE_WATCHING_KEY) {
-        loadContinueWatching();
-      }
+      if (e.key === CONTINUE_WATCHING_KEY) loadContinueWatching();
     };
     window.addEventListener('storage', handleStorage);
     
@@ -152,6 +289,8 @@ function HomeContent() {
     );
   }
   
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Decorative background */}
@@ -181,33 +320,21 @@ function HomeContent() {
             
             {/* User Profile Card */}
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden">
-              {/* Profile Header */}
               <div className="bg-gradient-to-r from-[#ff8240] to-[#00f99d] p-6 text-center">
                 <div className="w-20 h-20 mx-auto bg-white/20 backdrop-blur rounded-full flex items-center justify-center mb-3">
-                  <span className="text-3xl font-bold text-white">
-                    {user?.username?.charAt(0).toUpperCase() || 'U'}
-                  </span>
+                  <span className="text-3xl font-bold text-white">{user?.username?.charAt(0).toUpperCase() || 'U'}</span>
                 </div>
-                <h1 className="text-2xl font-bold text-white mb-1">
-                  {user?.username || 'User'}
-                </h1>
+                <h1 className="text-2xl font-bold text-white mb-1">{user?.username || 'User'}</h1>
                 <p className="text-white/80 text-sm">Student Account</p>
               </div>
-
-              {/* Subscriptions */}
               <div className="p-5">
-                <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-                  Your Subscriptions
-                </h2>
+                <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Your Subscriptions</h2>
                 {user?.subscriptions && user.subscriptions.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {user.subscriptions.map((sub) => {
                       const colors = subscriptionColors[sub.toLowerCase()] || { bg: 'bg-gray-500/10', text: 'text-gray-400', icon: '📚' };
                       return (
-                        <div
-                          key={sub}
-                          className={`${colors.bg} ${colors.text} px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2`}
-                        >
+                        <div key={sub} className={`${colors.bg} ${colors.text} px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2`}>
                           <span>{colors.icon}</span>
                           <span className="capitalize">{sub}</span>
                         </div>
@@ -217,8 +344,6 @@ function HomeContent() {
                 ) : (
                   <p className="text-white/40 text-sm">No active subscriptions</p>
                 )}
-
-                {/* Expiration */}
                 {user?.expires_at && (
                   <div className={`mt-4 p-3 rounded-xl ${isExpired ? 'bg-red-500/10' : daysLeft <= 7 ? 'bg-yellow-500/10' : 'bg-[#00f99d]/10'}`}>
                     <div className="flex items-center gap-2">
@@ -245,7 +370,6 @@ function HomeContent() {
                   Continue Watching
                 </h2>
 
-                {/* No Watch History */}
                 {!continueWatching && (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
@@ -258,19 +382,14 @@ function HomeContent() {
                   </div>
                 )}
 
-                {/* Continue Watching Video */}
                 {continueWatching && (
-                  <button
-                    onClick={() => router.push(`/access/${continueWatching.card_id}${continueWatching.progress_seconds > 0 ? `?t=${continueWatching.progress_seconds}` : ''}`)}
-                    className="w-full group"
-                  >
+                  <button onClick={openPlayer} className="w-full group">
                     <div className="relative rounded-2xl overflow-hidden bg-gray-800">
-                      {/* Video Thumbnail */}
                       <div className="relative aspect-video">
                         {continueWatching.video_url && extractYouTubeId(continueWatching.video_url) ? (
                           <img
                             src={`https://img.youtube.com/vi/${extractYouTubeId(continueWatching.video_url)}/maxresdefault.jpg`}
-                            alt={continueWatching.card_title || 'Video thumbnail'}
+                            alt={continueWatching.card_title || 'Video'}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -286,8 +405,6 @@ function HomeContent() {
                             </svg>
                           </div>
                         )}
-                        
-                        {/* Play Button Overlay */}
                         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <div className="w-16 h-16 bg-[#ff8240] group-hover:bg-[#00f99d] rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-all duration-300">
                             <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -295,41 +412,22 @@ function HomeContent() {
                             </svg>
                           </div>
                         </div>
-                        
-                        {/* Progress Bar */}
                         {continueWatching.duration_seconds > 0 && (
                           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-900/80">
-                            <div 
-                              className="h-full bg-gradient-to-r from-[#ff8240] to-[#00f99d]"
-                              style={{ 
-                                width: `${(continueWatching.progress_seconds / continueWatching.duration_seconds) * 100}%` 
-                              }}
-                            />
+                            <div className="h-full bg-gradient-to-r from-[#ff8240] to-[#00f99d]" style={{ width: `${(continueWatching.progress_seconds / continueWatching.duration_seconds) * 100}%` }} />
                           </div>
                         )}
                       </div>
-                      
-                      {/* Video Info */}
                       <div className="p-4">
-                        <h3 className="text-white font-medium text-left truncate mb-1">
-                          {continueWatching.card_title || 'Untitled Video'}
-                        </h3>
-                        <p className="text-gray-500 text-xs text-left mb-2">
-                          Card: {continueWatching.card_id}
-                        </p>
+                        <h3 className="text-white font-medium text-left truncate mb-1">{continueWatching.card_title || 'Untitled Video'}</h3>
+                        <p className="text-gray-500 text-xs text-left mb-2">Card: {continueWatching.card_id}</p>
                         <div className="flex items-center justify-between text-sm">
                           {continueWatching.duration_seconds > 0 ? (
-                            <span className="text-gray-400">
-                              {formatTime(continueWatching.progress_seconds)} / {formatTime(continueWatching.duration_seconds)}
-                            </span>
+                            <span className="text-gray-400">{formatTime(continueWatching.progress_seconds)} / {formatTime(continueWatching.duration_seconds)}</span>
                           ) : (
-                            <span className="text-[#00f99d] text-xs font-medium">
-                              Watch again
-                            </span>
+                            <span className="text-[#00f99d] text-xs font-medium">Watch again</span>
                           )}
-                          <span className="text-gray-500 text-xs">
-                            {formatTimeAgo(continueWatching.last_watched_at)}
-                          </span>
+                          <span className="text-gray-500 text-xs">{formatTimeAgo(continueWatching.last_watched_at)}</span>
                         </div>
                       </div>
                     </div>
@@ -346,7 +444,6 @@ function HomeContent() {
                 </svg>
                 How to access videos
               </h2>
-              
               <div className="space-y-4">
                 {[
                   { step: '1', title: 'Find QR code', desc: 'On your learning card', icon: '🔍' },
@@ -354,9 +451,7 @@ function HomeContent() {
                   { step: '3', title: 'Watch & learn', desc: 'Enjoy the video', icon: '🎬' },
                 ].map((item) => (
                   <div key={item.step} className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#ff8240]/20 rounded-xl flex items-center justify-center text-lg">
-                      {item.icon}
-                    </div>
+                    <div className="w-10 h-10 bg-[#ff8240]/20 rounded-xl flex items-center justify-center text-lg">{item.icon}</div>
                     <div className="flex-1">
                       <p className="text-white text-sm font-medium">{item.title}</p>
                       <p className="text-white/50 text-xs">{item.desc}</p>
@@ -383,15 +478,103 @@ function HomeContent() {
                 {loggingOut ? 'Signing out...' : 'Sign out'}
               </span>
             </button>
-
           </div>
         </main>
 
-        {/* Footer */}
         <footer className="px-4 py-4 text-center">
           <p className="text-white/30 text-xs">© 2025 Rassana CardVideo</p>
         </footer>
       </div>
+
+      {/* Video Player Modal */}
+      {showPlayer && continueWatching && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 bg-gray-900/80">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-medium truncate">{continueWatching.card_title || 'Video'}</h3>
+              <p className="text-gray-500 text-xs">Card: {continueWatching.card_id}</p>
+            </div>
+            <button onClick={closePlayer} className="ml-4 p-2 hover:bg-white/10 rounded-full transition-colors">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Video Container */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden relative">
+              <div id="inline-player" className="absolute inset-0 w-full h-full" />
+              
+              {/* Loading Overlay */}
+              {!playerReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                  <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+
+              {/* Center Play/Pause Button */}
+              {playerReady && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <button
+                    onClick={togglePlay}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all pointer-events-auto ${
+                      isPlaying ? 'opacity-0 hover:opacity-100 bg-black/60' : 'opacity-100 bg-[#ff8240]'
+                    }`}
+                  >
+                    {isPlaying ? (
+                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                    ) : (
+                      <svg className="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="p-4 bg-gray-900/80">
+            <div className="max-w-4xl mx-auto">
+              {/* Progress Bar */}
+              <div
+                ref={progressRef}
+                onClick={handleSeek}
+                className="h-2 bg-gray-700 rounded-full cursor-pointer mb-4 group"
+              >
+                <div className="h-full bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-full relative" style={{ width: `${progress}%` }}>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" />
+                </div>
+              </div>
+
+              {/* Control Buttons */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => skip(-10)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                    </svg>
+                  </button>
+                  <button onClick={togglePlay} className="p-3 bg-[#ff8240] hover:bg-[#00f99d] rounded-full transition-colors">
+                    {isPlaying ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    )}
+                  </button>
+                  <button onClick={() => skip(10)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                    </svg>
+                  </button>
+                </div>
+                <span className="text-white text-sm">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
