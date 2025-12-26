@@ -147,23 +147,6 @@ function AdminDashboardContent() {
     }
   }
   
-  async function regenerateQrCode(cardId: string) {
-    setLoadingQr(prev => ({ ...prev, [cardId]: true }));
-    try {
-      const response = await fetch(`/api/admin/cards/${cardId}/qr`);
-      if (response.ok) {
-        const data = await response.json();
-        setCardQrCodes(prev => ({ ...prev, [cardId]: data.qrCode }));
-      } else {
-        setError('Failed to regenerate QR code');
-      }
-    } catch (err) {
-      setError('Failed to regenerate QR code');
-    } finally {
-      setLoadingQr(prev => ({ ...prev, [cardId]: false }));
-    }
-  }
-  
   function getAccessUrl(cardId: string): string {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     return `${baseUrl}/access/${encodeURIComponent(cardId)}`;
@@ -1196,16 +1179,6 @@ function AdminDashboardContent() {
                               </svg>
                               <span>Save</span>
                             </a>
-                            <button
-                              onClick={() => regenerateQrCode(card.card_id)}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-orange-50 text-orange-600 text-xs font-medium rounded-xl hover:bg-orange-100 transition-colors"
-                              title="Regenerate"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                              </svg>
-                              <span>Refresh</span>
-                            </button>
                             <button
                               onClick={() => copyAccessLink(card.card_id)}
                               className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium rounded-xl transition-all ${
