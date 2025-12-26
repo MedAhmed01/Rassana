@@ -42,6 +42,9 @@ function LoginForm() {
         return;
       }
       
+      // Clear previous user's continue watching data on new login
+      localStorage.removeItem('rassana_continue_watching');
+      
       if (redirect) {
         router.push(redirect);
       } else if (data.role === 'admin') {

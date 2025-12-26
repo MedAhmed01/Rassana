@@ -310,6 +310,8 @@ function HomeContent() {
   async function handleLogout() {
     setLoggingOut(true);
     try {
+      // Clear continue watching data on logout
+      localStorage.removeItem(CONTINUE_WATCHING_KEY);
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
     } catch (err) {
