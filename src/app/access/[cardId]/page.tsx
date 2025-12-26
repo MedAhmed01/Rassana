@@ -428,22 +428,24 @@ export default function VideoAccessPage() {
             className={`relative bg-black overflow-hidden ${isFullscreenMode ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
             style={isFullscreenMode ? { height: '100vh' } : { paddingBottom: '56.25%' }}
             onMouseMove={() => setShowControls(true)}
-            onClick={handleDoubleTap}
           >
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
-            {/* Overlay to block all YouTube UI */}
-            <div className="absolute inset-0 z-10" />
+            {/* Overlay to capture clicks for double-tap - but allow button clicks through */}
+            <div 
+              className="absolute inset-0 z-10"
+              onClick={handleDoubleTap}
+            />
             
             {/* Center Controls - Skip Back, Play/Pause, Skip Forward */}
             <div 
-              className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 pointer-events-none ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
-              <div className="flex items-center gap-4 sm:gap-8 pointer-events-auto">
+              <div className="flex items-center gap-4 sm:gap-8">
                 {/* Skip Backward 10s */}
                 <button 
-                  onClick={skipBackward}
+                  onClick={(e) => { e.stopPropagation(); skipBackward(); }}
                   disabled={!playerReady}
                   className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white transition-all ${
                     playerReady
@@ -462,7 +464,7 @@ export default function VideoAccessPage() {
 
                 {/* Play/Pause */}
                 <button 
-                  onClick={togglePlay}
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                   disabled={!playerReady}
                   className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
                     playerReady 
@@ -489,7 +491,7 @@ export default function VideoAccessPage() {
 
                 {/* Skip Forward 10s */}
                 <button 
-                  onClick={skipForward}
+                  onClick={(e) => { e.stopPropagation(); skipForward(); }}
                   disabled={!playerReady}
                   className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white transition-all ${
                     playerReady
