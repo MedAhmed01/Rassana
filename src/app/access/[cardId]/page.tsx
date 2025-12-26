@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 interface VideoData {
   videoUrl: string;
   title?: string;
+}
+
+interface WatchProgress {
+  progress_seconds: number;
+  duration_seconds: number;
 }
 
 declare global {
@@ -32,15 +37,22 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function VideoAccessPage() {
+// LocalStorage key for continue watching
+const CONTINUE_WATCHING_KEY = 'rassana_continue_watching';
+
+function VideoAccessContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const cardId = params.cardId as string;
   
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
+  const lastSaveRef = useRef<number>(0);
+  const savedProgressRef = useRef<WatchProgress | null>(null);
+  const hasResumedRef = useRef<boolean>(false);
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -56,6 +68,7 @@ export default function VideoAccessPage() {
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isIPhone, setIsIPhone] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   
   // Detect iPhone (Safari on iPhone doesn't support Fullscreen API for divs)
   useEffect(() => {
@@ -63,6 +76,79 @@ export default function VideoAccessPage() {
     const isIPhoneDevice = /iPhone/i.test(userAgent) && !/iPad/i.test(userAgent);
     setIsIPhone(isIPhoneDevice);
   }, []);
+
+  // Save watch progress periodically
+  const saveProgress = useCallback(async (time: number, dur: number) => {
+    if (!cardId || dur <= 0) return;
+    
+    // Save to localStorage immediately (for Continue Watching feature)
+    try {
+      const continueWatchingData = {
+        card_id: cardId,
+        card_title: videoData?.title || null,
+        progress_seconds: time,
+        duration_seconds: dur,
+        last_watched_at: new Date().toISOString(),
+        video_url: videoData?.videoUrl || null,
+      };
+      localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(continueWatchingData));
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+    }
+    
+    // Only save to server every 5 seconds to avoid too many requests
+    const now = Date.now();
+    if (now - lastSaveRef.current < 5000) return;
+    lastSaveRef.current = now;
+    
+    try {
+      await fetch('/api/watch-progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cardId,
+          progressSeconds: time,
+          durationSeconds: dur,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to save progress:', err);
+    }
+  }, [cardId, videoData]);
+
+  // Fetch saved progress on mount
+  useEffect(() => {
+    async function fetchSavedProgress() {
+      try {
+        const response = await fetch(`/api/watch-progress/${cardId}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          savedProgressRef.current = data.data;
+          // Check if we should show resume prompt (if progress > 10 seconds and < 95% complete)
+          const progressPercent = data.data.duration_seconds > 0 
+            ? (data.data.progress_seconds / data.data.duration_seconds) * 100 
+            : 0;
+          if (data.data.progress_seconds > 10 && progressPercent < 95) {
+            setShowResumePrompt(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved progress:', err);
+      }
+    }
+    
+    // Check if we should auto-resume from URL param
+    const resumeTime = searchParams.get('t');
+    if (resumeTime) {
+      savedProgressRef.current = {
+        progress_seconds: parseFloat(resumeTime),
+        duration_seconds: 0,
+      };
+      hasResumedRef.current = false; // Will resume when player is ready
+    } else {
+      fetchSavedProgress();
+    }
+  }, [cardId, searchParams]);
   
   // Fetch video data
   useEffect(() => {
@@ -152,6 +238,24 @@ export default function VideoAccessPage() {
             setPlayerReady(true);
             setDuration(event.target.getDuration());
             setVolume(event.target.getVolume());
+            
+            // Check if we should resume from saved progress
+            const resumeTime = searchParams.get('t');
+            if (resumeTime && !hasResumedRef.current) {
+              const time = parseFloat(resumeTime);
+              event.target.seekTo(time, true);
+              setCurrentTime(time);
+              hasResumedRef.current = true;
+            } else if (savedProgressRef.current && !hasResumedRef.current && !showResumePrompt) {
+              // Auto-resume if coming from continue watching
+              const time = savedProgressRef.current.progress_seconds;
+              if (time > 10) {
+                event.target.seekTo(time, true);
+                setCurrentTime(time);
+                hasResumedRef.current = true;
+              }
+            }
+            
             // Autoplay the video
             event.target.playVideo();
             setIsPlaying(true);
@@ -176,18 +280,59 @@ export default function VideoAccessPage() {
     };
   }, [videoData]);
 
-  // Update time
+  // Update time and save progress
   useEffect(() => {
     if (!playerReady) return;
     
     const interval = setInterval(() => {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-        setCurrentTime(playerRef.current.getCurrentTime());
+        const time = playerRef.current.getCurrentTime();
+        const dur = playerRef.current.getDuration();
+        setCurrentTime(time);
+        
+        // Save progress while playing
+        if (isPlaying && dur > 0) {
+          saveProgress(time, dur);
+        }
       }
     }, 500);
     
     return () => clearInterval(interval);
-  }, [playerReady]);
+  }, [playerReady, isPlaying, saveProgress]);
+
+  // Save progress when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (playerRef.current && duration > 0) {
+        const time = playerRef.current.getCurrentTime();
+        
+        // Save to localStorage
+        try {
+          const continueWatchingData = {
+            card_id: cardId,
+            card_title: videoData?.title || null,
+            progress_seconds: time,
+            duration_seconds: duration,
+            last_watched_at: new Date().toISOString(),
+            video_url: videoData?.videoUrl || null,
+          };
+          localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(continueWatchingData));
+        } catch (err) {
+          console.error('Failed to save to localStorage:', err);
+        }
+        
+        // Use sendBeacon for reliable save on page unload
+        navigator.sendBeacon('/api/watch-progress', JSON.stringify({
+          cardId,
+          progressSeconds: time,
+          durationSeconds: duration,
+        }));
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [cardId, duration, videoData]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -355,6 +500,20 @@ export default function VideoAccessPage() {
     });
   }, [cardId]);
 
+  const handleResume = useCallback(() => {
+    if (playerRef.current && savedProgressRef.current) {
+      playerRef.current.seekTo(savedProgressRef.current.progress_seconds, true);
+      setCurrentTime(savedProgressRef.current.progress_seconds);
+      hasResumedRef.current = true;
+    }
+    setShowResumePrompt(false);
+  }, []);
+
+  const handleStartOver = useCallback(() => {
+    hasResumedRef.current = true;
+    setShowResumePrompt(false);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -515,6 +674,40 @@ export default function VideoAccessPage() {
               </div>
             </div>
 
+            {/* Resume Prompt */}
+            {showResumePrompt && savedProgressRef.current && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                <div className="bg-gray-800/95 rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-white/10">
+                  <div className="text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 bg-[#ff8240]/20 rounded-full flex items-center justify-center">
+                      <svg className="w-7 h-7 text-[#ff8240]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-semibold text-lg mb-2">Continue Watching?</h3>
+                    <p className="text-gray-400 text-sm mb-5">
+                      Resume from {formatTime(savedProgressRef.current.progress_seconds)}
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleStartOver}
+                        className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-sm font-medium transition-colors"
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={handleResume}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#ff8240] to-[#00f99d] hover:opacity-90 text-white rounded-xl text-sm font-medium transition-opacity"
+                      >
+                        Resume
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Controls */}
             <div className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`}>
               <div className="bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-3 pointer-events-auto">
@@ -621,5 +814,20 @@ export default function VideoAccessPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function VideoAccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white">Loading video...</p>
+        </div>
+      </div>
+    }>
+      <VideoAccessContent />
+    </Suspense>
   );
 }
