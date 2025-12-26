@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAuth } from '@/middleware/auth';
 import { getCardById } from '@/services/cards';
 import { logVideoAccess } from '@/services/accessLogs';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase';
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +26,7 @@ export async function GET(
     
     // Check subscription access for students
     if (auth.role === 'student') {
-      // Get user's subscriptions
+      // Get user's subscriptions using admin client to bypass RLS
       const supabase = await createServerSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -37,14 +37,23 @@ export async function GET(
         );
       }
       
-      const { data: profile } = await supabase
+      // Use admin client to fetch profile (bypasses RLS)
+      const adminClient = createAdminClient();
+      const { data: profile, error: profileError } = await adminClient
         .from('user_profiles')
         .select('subscriptions')
         .eq('user_id', user.id)
         .single();
       
+      console.log('User ID:', user.id);
+      console.log('Profile:', profile);
+      console.log('Profile error:', profileError);
+      
       const userSubscriptions = (profile?.subscriptions || []).map((s: string) => s.toLowerCase());
       const requiredSubscriptions = (card.required_subscriptions || []).map((s: string) => s.toLowerCase());
+      
+      console.log('User subscriptions:', userSubscriptions);
+      console.log('Required subscriptions:', requiredSubscriptions);
       
       // If card has required subscriptions, check if user has at least one
       if (requiredSubscriptions.length > 0) {
