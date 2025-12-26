@@ -52,7 +52,7 @@ function HomeContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="font-bold text-xl text-gray-900">CardVideo</span>
+            <span className="font-bold text-xl text-gray-900">Rassana CardVideo</span>
           </div>
           <button
             onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => router.push('/login'))}
@@ -67,7 +67,7 @@ function HomeContent() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to <span className="text-[#d4834b]">CardVideo</span>
+            Welcome to <span className="text-[#d4834b]">Rassana CardVideo</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Access video explanations instantly by scanning the QR code on your learning card.
@@ -135,7 +135,7 @@ function HomeContent() {
 
       {/* Footer */}
       <footer className="py-8 text-center text-sm text-gray-400">
-        <p>© 2025 CardVideo. All rights reserved.</p>
+        <p>© 2025 Rassana CardVideo. All rights reserved.</p>
       </footer>
     </div>
   );

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CardVideo - Video Access System",
+  title: "Rassana CardVideo - Video Access System",
   description: "Access video explanations by scanning QR codes on your learning cards",
 };
 
