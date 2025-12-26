@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
+  user_id: string;
   username: string;
   role: 'admin' | 'student';
   subscriptions?: string[];
@@ -208,7 +209,7 @@ function AdminDashboardContent() {
     
     console.log('Updating user with data:', editForm);
     
-    const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+    const response = await fetch(`/api/admin/users/${editingUser.user_id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editForm),
@@ -245,7 +246,7 @@ function AdminDashboardContent() {
       }
       
       // Remove user from local state immediately
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      setUsers(prev => prev.filter(u => u.user_id !== userId));
       console.log('User deleted successfully');
     } catch (err) {
       console.error('Delete user error:', err);
@@ -769,7 +770,7 @@ function AdminDashboardContent() {
                   
                   return (
                     <div
-                      key={user.id}
+                      key={user.user_id}
                       className="group relative bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden"
                     >
                       {/* Card Header with gradient */}
@@ -782,11 +783,11 @@ function AdminDashboardContent() {
                         <div className="absolute inset-0 opacity-10">
                           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                             <defs>
-                              <pattern id={`grid-${user.id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                              <pattern id={`grid-${user.user_id}`} width="10" height="10" patternUnits="userSpaceOnUse">
                                 <circle cx="1" cy="1" r="1" fill="white"/>
                               </pattern>
                             </defs>
-                            <rect width="100" height="100" fill={`url(#grid-${user.id})`}/>
+                            <rect width="100" height="100" fill={`url(#grid-${user.user_id})`}/>
                           </svg>
                         </div>
                         
@@ -893,7 +894,7 @@ function AdminDashboardContent() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(user.id, user.username)}
+                            onClick={() => handleDeleteUser(user.user_id, user.username)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm rounded-xl transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
