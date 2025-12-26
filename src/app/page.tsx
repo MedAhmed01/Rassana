@@ -73,8 +73,12 @@ function HomeContent() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
   const playerRef = useRef<any>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadContinueWatching = () => {
     try {
@@ -216,6 +220,50 @@ function HomeContent() {
     playerRef.current.seekTo(newTime, true);
     setCurrentTime(newTime);
   };
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!playerContainerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      playerContainerRef.current.requestFullscreen().catch(err => {
+        console.log('Fullscreen error:', err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Auto-hide controls
+  const resetControlsTimeout = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     async function checkSession() {
@@ -488,12 +536,17 @@ function HomeContent() {
 
       {/* Video Player Modal */}
       {showPlayer && continueWatching && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 bg-gray-900/80">
+        <div 
+          ref={playerContainerRef}
+          className="fixed inset-0 z-50 bg-black flex flex-col"
+          onMouseMove={resetControlsTimeout}
+          onTouchStart={resetControlsTimeout}
+        >
+          {/* Header - hidden in fullscreen when controls hidden */}
+          <div className={`flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-30 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
             <div className="flex-1 min-w-0">
               <h3 className="text-white font-medium truncate">{continueWatching.card_title || 'Video'}</h3>
-              <p className="text-gray-500 text-xs">Card: {continueWatching.card_id}</p>
+              <p className="text-gray-400 text-xs">Card: {continueWatching.card_id}</p>
             </div>
             <button onClick={closePlayer} className="ml-4 p-2 hover:bg-white/10 rounded-full transition-colors">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -503,34 +556,37 @@ function HomeContent() {
           </div>
 
           {/* Video Container */}
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden relative">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full h-full max-w-4xl max-h-full aspect-video bg-black relative">
               {/* YouTube Player */}
               <div id="inline-player" className="absolute inset-0 w-full h-full pointer-events-none" />
               
               {/* Transparent overlay to block YouTube controls */}
-              <div className="absolute inset-0 z-10" onClick={togglePlay} />
+              <div 
+                className="absolute inset-0 z-10" 
+                onClick={() => { togglePlay(); resetControlsTimeout(); }}
+              />
               
               {/* Loading Overlay */}
               {!playerReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-20">
+                <div className="absolute inset-0 flex items-center justify-center bg-black z-20">
                   <div className="w-12 h-12 border-4 border-[#ff8240] border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
 
               {/* Center Play/Pause Button */}
               {playerReady && (
-                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                <div className={`absolute inset-0 flex items-center justify-center z-20 pointer-events-none transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
                   <button
-                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all pointer-events-auto ${
-                      isPlaying ? 'opacity-0 hover:opacity-100 bg-black/60' : 'opacity-100 bg-[#ff8240]'
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); resetControlsTimeout(); }}
+                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white shadow-lg transition-all pointer-events-auto ${
+                      isPlaying ? 'bg-black/50 hover:bg-black/70' : 'bg-[#ff8240] hover:bg-[#00f99d]'
                     }`}
                   >
                     {isPlaying ? (
-                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
                     ) : (
-                      <svg className="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     )}
                   </button>
                 </div>
@@ -538,42 +594,55 @@ function HomeContent() {
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="p-4 bg-gray-900/80">
+          {/* Bottom Controls */}
+          <div className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
             <div className="max-w-4xl mx-auto">
               {/* Progress Bar */}
               <div
                 ref={progressRef}
                 onClick={handleSeek}
-                className="h-2 bg-gray-700 rounded-full cursor-pointer mb-4 group"
+                className="h-1 sm:h-2 bg-gray-600 rounded-full cursor-pointer mb-4 group"
               >
                 <div className="h-full bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-full relative" style={{ width: `${progress}%` }}>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" />
                 </div>
               </div>
 
               {/* Control Buttons */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <button onClick={() => skip(-10)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                     </svg>
                   </button>
-                  <button onClick={togglePlay} className="p-3 bg-[#ff8240] hover:bg-[#00f99d] rounded-full transition-colors">
+                  <button onClick={togglePlay} className="p-2 sm:p-3 bg-[#ff8240] hover:bg-[#00f99d] rounded-full transition-colors">
                     {isPlaying ? (
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
                     ) : (
-                      <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     )}
                   </button>
                   <button onClick={() => skip(10)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
                     </svg>
                   </button>
+                  <span className="text-white text-xs sm:text-sm ml-2">{formatTime(currentTime)} / {formatTime(duration)}</span>
                 </div>
-                <span className="text-white text-sm">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                
+                {/* Fullscreen Button */}
+                <button onClick={toggleFullscreen} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  {isFullscreen ? (
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
           </div>
