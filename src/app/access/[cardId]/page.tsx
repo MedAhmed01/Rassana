@@ -136,6 +136,7 @@ export default function VideoAccessPage() {
       playerRef.current = new window.YT.Player('youtube-player', {
         videoId: youtubeId,
         playerVars: {
+          autoplay: 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -151,6 +152,9 @@ export default function VideoAccessPage() {
             setPlayerReady(true);
             setDuration(event.target.getDuration());
             setVolume(event.target.getVolume());
+            // Autoplay the video
+            event.target.playVideo();
+            setIsPlaying(true);
           },
           onStateChange: (event: any) => {
             const playing = event.data === window.YT.PlayerState.PLAYING;
@@ -432,15 +436,10 @@ export default function VideoAccessPage() {
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
             
-            {/* Overlay to capture clicks for double-tap - but allow button clicks through */}
-            <div 
-              className="absolute inset-0 z-10"
-              onClick={handleDoubleTap}
-            />
-            
             {/* Center Controls - Skip Back, Play/Pause, Skip Forward */}
             <div 
               className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              onClick={handleDoubleTap}
             >
               <div className="flex items-center gap-4 sm:gap-8">
                 {/* Skip Backward 10s */}
