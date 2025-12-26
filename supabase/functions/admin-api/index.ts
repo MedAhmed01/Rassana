@@ -193,6 +193,40 @@ serve(async (req: Request) => {
         result = { data: { success: true }, error: deleteError };
         break;
 
+      case "forceLogout":
+        if (!data?.userId) {
+          return new Response(
+            JSON.stringify({ error: "User ID required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Update force_logout_at and clear session_token
+        const { error: forceLogoutError } = await adminClient
+          .from("user_profiles")
+          .update({ 
+            force_logout_at: new Date().toISOString(),
+            session_token: null,
+          })
+          .eq("user_id", data.userId);
+
+        if (forceLogoutError) {
+          return new Response(
+            JSON.stringify({ error: forceLogoutError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Also sign out all sessions via Supabase Admin API
+        try {
+          await adminClient.auth.admin.signOut(data.userId as string, "global");
+        } catch (e) {
+          console.log("Could not sign out via admin API:", e);
+        }
+
+        result = { data: { success: true }, error: null };
+        break;
+
       // ============ CARD OPERATIONS ============
       case "getCards":
         result = await adminClient

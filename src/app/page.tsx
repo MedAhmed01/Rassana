@@ -563,6 +563,11 @@ function HomeContent() {
               {/* YouTube Player */}
               <div id="inline-player" className="absolute inset-0 w-full h-full pointer-events-none" />
               
+              {/* Watermark */}
+              <div className="absolute bottom-16 right-4 z-40 pointer-events-none select-none">
+                <span className="text-white/30 text-xs font-medium tracking-wide">{user?.username}</span>
+              </div>
+              
               {/* Transparent overlay to block YouTube controls */}
               <div 
                 className="absolute inset-0 z-10" 

@@ -87,9 +87,22 @@ export async function GET(
       await logVideoAccess(user.id, cardId);
     }
     
+    // Get username for watermark
+    let username = '';
+    if (user?.id) {
+      const adminClient = createAdminClient();
+      const { data: userProfile } = await adminClient
+        .from('user_profiles')
+        .select('username')
+        .eq('user_id', user.id)
+        .single();
+      username = userProfile?.username || '';
+    }
+    
     return NextResponse.json({ 
       videoUrl: card.video_url,
       title: card.title,
+      username,
     });
   } catch (error) {
     console.error('Access error:', error);

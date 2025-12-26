@@ -237,6 +237,26 @@ function AdminDashboardContent() {
       setError('Network error while deleting user');
     }
   }
+
+  async function handleForceLogout(userId: string, username: string) {
+    if (!confirm(`Force logout "${username}"? This will end their current session.`)) return;
+    
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/force-logout`, { method: 'POST' });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to force logout user');
+        return;
+      }
+      
+      alert(`${username} has been logged out successfully.`);
+    } catch (err) {
+      console.error('Force logout error:', err);
+      setError('Network error while forcing logout');
+    }
+  }
   
   function startEditUser(user: User) {
     setEditingUser(user);
@@ -899,6 +919,17 @@ function AdminDashboardContent() {
                             </svg>
                             Edit
                           </button>
+                          {user.role === 'student' && (
+                            <button
+                              onClick={() => handleForceLogout(user.user_id, user.username)}
+                              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-medium text-sm rounded-xl transition-colors"
+                              title="Force logout this user"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteUser(user.user_id, user.username)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm rounded-xl transition-colors"
