@@ -40,6 +40,7 @@ export default function VideoAccessPage() {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<number>(0);
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,16 @@ export default function VideoAccessPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isIPhone, setIsIPhone] = useState(false);
+  
+  // Detect iPhone (Safari on iPhone doesn't support Fullscreen API for divs)
+  useEffect(() => {
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isIPhoneDevice = /iPhone/i.test(userAgent) && !/iPad/i.test(userAgent);
+    setIsIPhone(isIPhoneDevice);
+  }, []);
   
   // Fetch video data
   useEffect(() => {
@@ -315,6 +325,22 @@ export default function VideoAccessPage() {
     }
   }, []);
 
+  // Handle double tap for pseudo-fullscreen on iPhone
+  const handleDoubleTap = useCallback(() => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      if (isIPhone) {
+        setIsPseudoFullscreen(prev => !prev);
+      } else {
+        toggleFullscreen();
+      }
+    }
+    lastTapRef.current = now;
+  }, [isIPhone, toggleFullscreen]);
+
   const copyLink = useCallback(() => {
     const link = `${window.location.origin}/access/${cardId}`;
     navigator.clipboard.writeText(link).then(() => {
@@ -329,7 +355,7 @@ export default function VideoAccessPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white">Loading video...</p>
         </div>
       </div>
@@ -356,7 +382,7 @@ export default function VideoAccessPage() {
             </button>
             <button 
               onClick={() => window.location.reload()} 
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-6 py-2 bg-[#d4834b] text-white rounded-lg hover:bg-[#b86d3a]"
             >
               Try Again
             </button>
@@ -371,15 +397,16 @@ export default function VideoAccessPage() {
   if (!youtubeId) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Invalid video</div>;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const isFullscreenMode = isFullscreen || isPseudoFullscreen;
 
   return (
-    <div className={`min-h-screen bg-gray-900 flex flex-col select-none ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+    <div className={`min-h-screen bg-gray-900 flex flex-col select-none ${isFullscreenMode ? 'fullscreen-mode' : ''}`}>
       {/* Header - hidden in fullscreen */}
-      {!isFullscreen && (
+      {!isFullscreenMode && (
         <header className="bg-gray-800/90 backdrop-blur border-b border-gray-700 px-4 py-3 z-20">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-[#d4834b] rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
@@ -392,15 +419,16 @@ export default function VideoAccessPage() {
       )}
 
       {/* Video */}
-      <main className={`flex-1 flex items-center justify-center ${isFullscreen ? 'p-0' : 'p-4'}`}>
-        <div className={`w-full ${isFullscreen ? 'max-w-none h-full' : 'max-w-5xl'}`}>
-          {videoData.title && !isFullscreen && <h1 className="text-xl font-bold text-white mb-4 text-center">{videoData.title}</h1>}
+      <main className={`flex-1 flex items-center justify-center ${isFullscreenMode ? 'p-0' : 'p-4'}`}>
+        <div className={`w-full ${isFullscreenMode ? 'max-w-none h-full' : 'max-w-5xl'}`}>
+          {videoData.title && !isFullscreenMode && <h1 className="text-xl font-bold text-white mb-4 text-center">{videoData.title}</h1>}
           
           <div 
             ref={containerRef}
-            className={`relative bg-black overflow-hidden ${isFullscreen ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
-            style={isFullscreen ? { height: '100vh' } : { paddingBottom: '56.25%' }}
+            className={`relative bg-black overflow-hidden ${isFullscreenMode ? 'w-full h-full rounded-none' : 'rounded-xl'}`}
+            style={isFullscreenMode ? { height: '100vh' } : { paddingBottom: '56.25%' }}
             onMouseMove={() => setShowControls(true)}
+            onClick={handleDoubleTap}
           >
             {/* YouTube Player (hidden controls) */}
             <div id="youtube-player" className="absolute inset-0 w-full h-full pointer-events-none" />
@@ -438,7 +466,7 @@ export default function VideoAccessPage() {
                   disabled={!playerReady}
                   className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
                     playerReady 
-                      ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/40 hover:scale-105 active:scale-90 cursor-pointer' 
+                      ? 'bg-[#d4834b] hover:bg-[#e09a68] shadow-[#d4834b]/40 hover:scale-105 active:scale-90 cursor-pointer' 
                       : 'bg-gray-600 cursor-not-allowed opacity-50'
                   }`}
                   title={playerReady ? (isPlaying ? 'Pause' : 'Play') : 'Loading...'}
@@ -489,17 +517,17 @@ export default function VideoAccessPage() {
                   className="h-1.5 bg-gray-600 rounded-full mb-4 cursor-pointer group"
                   onClick={(e) => { e.stopPropagation(); handleSeek(e); }}
                 >
-                  <div className="h-full bg-blue-600 rounded-full relative" style={{ width: `${progress}%` }}>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="h-full bg-[#d4834b] rounded-full relative" style={{ width: `${progress}%` }}>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#e09a68] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
                 
                 {/* Controls row */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {/* Volume */}
-                    <div className="flex items-center gap-2 group">
-                      <button onClick={(e) => { e.stopPropagation(); toggleMute(); }} className="text-white hover:text-blue-400 p-1">
+                    {/* Volume - hidden on mobile */}
+                    <div className="hidden sm:flex items-center gap-2 group">
+                      <button onClick={(e) => { e.stopPropagation(); toggleMute(); }} className="text-white hover:text-[#e09a68] p-1">
                         {isMuted || volume === 0 ? (
                           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
                         ) : (
@@ -513,7 +541,7 @@ export default function VideoAccessPage() {
                         value={isMuted ? 0 : volume}
                         onChange={handleVolumeChange}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-0 group-hover:w-20 transition-all duration-200 accent-blue-600"
+                        className="w-0 group-hover:w-20 transition-all duration-200 accent-[#d4834b]"
                       />
                     </div>
                     
@@ -523,34 +551,53 @@ export default function VideoAccessPage() {
 
                   {/* Right side controls */}
                   <div className="flex items-center gap-2">
-                    {/* Fullscreen */}
-                    <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="text-white hover:text-blue-400 p-1" title="Plein écran">
-                      {isFullscreen ? (
+                    {/* Fullscreen - hidden on iPhone (not supported) */}
+                    {!isIPhone && (
+                      <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="text-white hover:text-[#e09a68] p-1" title="Plein écran">
+                        {isFullscreen ? (
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                    {/* Exit pseudo-fullscreen button for iPhone */}
+                    {isIPhone && isPseudoFullscreen && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setIsPseudoFullscreen(false); }} 
+                        className="text-white hover:text-[#e09a68] p-1" 
+                        title="Exit fullscreen"
+                      >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
                         </svg>
-                      ) : (
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                        </svg>
-                      )}
-                    </button>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {!isFullscreen && (
+          {!isFullscreenMode && (
             <div className="mt-4 text-center">
               <span className="px-3 py-1 bg-gray-800 text-gray-500 text-sm rounded-full">Card: {cardId}</span>
             </div>
+          )}
+          
+          {/* Double tap hint for iPhone */}
+          {isIPhone && !isPseudoFullscreen && (
+            <p className="text-center text-gray-500 text-xs mt-2">Double tap video for fullscreen</p>
           )}
         </div>
       </main>
 
       {/* Footer - hidden in fullscreen */}
-      {!isFullscreen && (
+      {!isFullscreenMode && (
         <footer className="bg-gray-800 border-t border-gray-700 px-4 py-2">
           <p className="text-center text-gray-500 text-xs">Protected content</p>
         </footer>

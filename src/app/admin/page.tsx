@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -30,7 +30,7 @@ interface AccessLog {
   card_title?: string;
 }
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs'>('users');
   const [loading, setLoading] = useState(true);
@@ -359,7 +359,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-500 text-sm">Loading dashboard...</p>
         </div>
       </div>
@@ -381,8 +381,8 @@ export default function AdminDashboard() {
           {/* Header Card */}
           <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-4 sm:p-5">
             {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/10 via-blue-500/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#e09a68]/20 via-purple-500/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#e09a68]/10 via-[#e09a68]/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
             
             {/* Main Header Content */}
             <div className="relative flex items-center justify-between mb-4">
@@ -390,8 +390,8 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Animated Logo */}
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
-                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#d4834b] via-purple-600 to-[#d4834b] rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-[#e09a68] via-[#d4834b] to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                     <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
@@ -447,7 +447,7 @@ export default function AdminDashboard() {
                   >
                     {/* Active Background */}
                     {isActive && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-blue-500/25"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#d4834b] to-purple-600 rounded-xl shadow-lg shadow-[#e09a68]/25"></div>
                     )}
                     
                     {/* Content */}
@@ -506,7 +506,7 @@ export default function AdminDashboard() {
             {/* Create User Form - Modern Redesign */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
               {/* Animated gradient border */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-20 blur-xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#e09a68] via-purple-500 to-pink-500 opacity-20 blur-xl"></div>
               
               <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
                 {/* Collapsible Header */}
@@ -516,8 +516,8 @@ export default function AdminDashboard() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-50"></div>
-                      <div className="relative w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#e09a68] to-purple-500 rounded-2xl blur-lg opacity-50"></div>
+                      <div className="relative w-14 h-14 bg-gradient-to-br from-[#e09a68] to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
                         <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
@@ -548,7 +548,7 @@ export default function AdminDashboard() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
@@ -557,7 +557,7 @@ export default function AdminDashboard() {
                           placeholder="Enter username"
                           value={newUser.username}
                           onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200"
                           required
                         />
                       </div>
@@ -570,7 +570,7 @@ export default function AdminDashboard() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
@@ -579,7 +579,7 @@ export default function AdminDashboard() {
                           placeholder="Enter password"
                           value={newUser.password}
                           onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200"
                           required
                         />
                       </div>
@@ -592,14 +592,14 @@ export default function AdminDashboard() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
                         </div>
                         <select
                           value={newUser.role}
                           onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
+                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
                         >
                           <option value="student">Student</option>
                           <option value="admin">Admin</option>
@@ -620,7 +620,7 @@ export default function AdminDashboard() {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                           type="date"
                           value={newUser.expires_at}
                           onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
+                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#e09a68]/50 focus:border-[#e09a68]/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
                           required
                         />
                       </div>
@@ -650,7 +650,7 @@ export default function AdminDashboard() {
                         {availableSubscriptions.map((sub) => {
                           const isSelected = newUser.subscriptions.includes(sub);
                           const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
-                            math: { gradient: 'from-blue-500 to-cyan-500', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                            math: { gradient: 'from-[#e09a68] to-[#e09a68]', ring: 'ring-[#e09a68]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
                             physics: { gradient: 'from-purple-500 to-pink-500', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                             science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
                           };
@@ -663,7 +663,7 @@ export default function AdminDashboard() {
                               onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
                               className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                                 isSelected
-                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? 'blue' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
+                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#d4834b]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
                                   : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
                               }`}
                             >
@@ -687,9 +687,9 @@ export default function AdminDashboard() {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
+                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#d4834b] via-[#e09a68] to-purple-600 p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[#e09a68]/25"
                     >
-                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
+                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#d4834b] via-[#e09a68] to-purple-600 px-6 py-4 transition-all group-hover:bg-opacity-0">
                         <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -745,7 +745,7 @@ export default function AdminDashboard() {
                       placeholder="Search by username..."
                       value={userSearchQuery}
                       onChange={(e) => setUserSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e09a68]/20 focus:border-[#e09a68] focus:bg-white transition-all"
                     />
                     {userSearchQuery && (
                       <button
@@ -840,7 +840,7 @@ export default function AdminDashboard() {
                               <div className="flex flex-wrap gap-1.5">
                                 {user.subscriptions.map((sub) => {
                                   const subColors: Record<string, string> = {
-                                    math: 'bg-blue-100 text-blue-700 ring-blue-200',
+                                    math: 'bg-[#fae9dc] text-[#b86d3a] ring-[#f5d3b9]',
                                     physics: 'bg-purple-100 text-purple-700 ring-purple-200',
                                     science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
                                   };
@@ -944,7 +944,7 @@ export default function AdminDashboard() {
                   <p className="text-slate-500">No users match "{userSearchQuery}"</p>
                   <button
                     onClick={() => setUserSearchQuery('')}
-                    className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="mt-4 px-4 py-2 text-sm font-medium text-[#d4834b] hover:text-[#b86d3a] hover:bg-[#fdf6f1] rounded-lg transition-colors"
                   >
                     Clear search
                   </button>
@@ -960,11 +960,11 @@ export default function AdminDashboard() {
         {activeTab === 'cards' && (
           <div className="space-y-6">
             {/* Background Container */}
-            <div className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-8 rounded-3xl bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 overflow-hidden">
+            <div className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-8 rounded-3xl bg-gradient-to-br from-slate-50 via-[#fdf6f1]/30 to-purple-50/30 overflow-hidden">
               {/* Decorative Elements */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#f5d3b9]/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-orange-200/20 to-pink-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cyan-200/10 to-blue-200/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
+              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-[#fae9dc]/10 to-[#f5d3b9]/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
               
               {/* Content */}
               <div className="relative space-y-6">
@@ -1011,7 +1011,7 @@ export default function AdminDashboard() {
                   </button>
                   {availableSubscriptions.map((sub) => {
                     const colors: Record<string, { active: string; inactive: string }> = {
-                      math: { active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
+                      math: { active: 'bg-[#e09a68] text-white shadow-lg shadow-[#e09a68]/25', inactive: 'bg-[#fdf6f1] text-[#d4834b] hover:bg-[#fae9dc]' },
                       physics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
                       science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
                     };
@@ -1065,7 +1065,7 @@ export default function AdminDashboard() {
                 return matchesSearch && matchesCategory;
               }).map((card) => {
                 const subColors: Record<string, string> = {
-                  math: 'from-blue-500 to-cyan-500',
+                  math: 'from-[#e09a68] to-[#e09a68]',
                   physics: 'from-purple-500 to-pink-500',
                   science: 'from-green-500 to-emerald-500',
                 };
@@ -1089,13 +1089,13 @@ export default function AdminDashboard() {
                           <h3 className="font-semibold text-gray-900 text-lg truncate">{card.title || 'Untitled'}</h3>
                         </div>
                         
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Action Buttons - Always visible */}
+                        <div className="flex items-center gap-1">
                           <a
                             href={card.video_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-2 text-[#e09a68] hover:text-[#d4834b] hover:bg-[#fdf6f1] rounded-lg transition-colors"
                             title="Watch video"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1105,7 +1105,7 @@ export default function AdminDashboard() {
                           </a>
                           <button
                             onClick={() => startEditCard(card)}
-                            className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1114,7 +1114,7 @@ export default function AdminDashboard() {
                           </button>
                           <button
                             onClick={() => handleDeleteCard(card)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1129,7 +1129,7 @@ export default function AdminDashboard() {
                         <div className="flex flex-wrap gap-1.5">
                           {card.required_subscriptions.map((sub) => {
                             const tagColors: Record<string, string> = {
-                              math: 'bg-blue-50 text-blue-700 ring-blue-200',
+                              math: 'bg-[#fdf6f1] text-[#b86d3a] ring-[#f5d3b9]',
                               physics: 'bg-purple-50 text-purple-700 ring-purple-200',
                               science: 'bg-green-50 text-green-700 ring-green-200',
                             };
@@ -1176,7 +1176,7 @@ export default function AdminDashboard() {
                                   window.location.reload();
                                 }
                               }}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-xl hover:bg-blue-100 transition-colors"
+                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-[#fdf6f1] text-[#d4834b] text-xs font-medium rounded-xl hover:bg-[#fae9dc] transition-colors"
                               title="Print QR"
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1284,30 +1284,30 @@ export default function AdminDashboard() {
                   placeholder="User ID"
                   value={logFilters.userId}
                   onChange={(e) => setLogFilters({ ...logFilters, userId: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="text"
                   placeholder="Card ID"
                   value={logFilters.cardId}
                   onChange={(e) => setLogFilters({ ...logFilters, cardId: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="date"
                   value={logFilters.startDate}
                   onChange={(e) => setLogFilters({ ...logFilters, startDate: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                 />
                 <input
                   type="date"
                   value={logFilters.endDate}
                   onChange={(e) => setLogFilters({ ...logFilters, endDate: e.target.value })}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                 />
                 <button
                   onClick={loadLogs}
-                  className="py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20"
+                  className="py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a] shadow-lg shadow-[#d4834b]/20"
                 >
                   Apply Filters
                 </button>
@@ -1367,7 +1367,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={editForm.username}
                   onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   required
                 />
               </div>
@@ -1377,7 +1377,7 @@ export default function AdminDashboard() {
                   type="password"
                   value={editForm.password}
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   placeholder="Leave empty to keep current"
                 />
               </div>
@@ -1386,7 +1386,7 @@ export default function AdminDashboard() {
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                 >
                   <option value="student">Student</option>
                   <option value="admin">Admin</option>
@@ -1399,7 +1399,7 @@ export default function AdminDashboard() {
                   type="date"
                   value={editForm.expires_at}
                   onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   required
                 />
               </div>
@@ -1415,7 +1415,7 @@ export default function AdminDashboard() {
                         onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           editForm.subscriptions.includes(sub)
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-[#d4834b] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -1428,7 +1428,7 @@ export default function AdminDashboard() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700"
+                  className="flex-1 py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a]"
                 >
                   Save Changes
                 </button>
@@ -1566,7 +1566,7 @@ export default function AdminDashboard() {
                       {availableSubscriptions.map((sub) => {
                         const isSelected = newCard.required_subscriptions.includes(sub);
                         const colors: Record<string, { gradient: string; icon: string }> = {
-                          math: { gradient: 'from-blue-500 to-cyan-500', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                          math: { gradient: 'from-[#e09a68] to-[#e09a68]', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
                           physics: { gradient: 'from-purple-500 to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                           science: { gradient: 'from-green-500 to-emerald-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
                         };
@@ -1647,7 +1647,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={editCardForm.title}
                   onChange={(e) => setEditCardForm({ ...editCardForm, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   placeholder="Card title (optional)"
                 />
               </div>
@@ -1657,7 +1657,7 @@ export default function AdminDashboard() {
                   type="url"
                   value={editCardForm.video_url}
                   onChange={(e) => setEditCardForm({ ...editCardForm, video_url: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   placeholder="YouTube URL"
                   required
                 />
@@ -1668,7 +1668,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={editCardForm.subject}
                   onChange={(e) => setEditCardForm({ ...editCardForm, subject: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e09a68] focus:border-transparent focus:bg-white"
                   placeholder="e.g., Physics, Math"
                 />
               </div>
@@ -1682,7 +1682,7 @@ export default function AdminDashboard() {
                       onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         editCardForm.required_subscriptions.includes(sub)
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[#d4834b] text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -1695,7 +1695,7 @@ export default function AdminDashboard() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700"
+                  className="flex-1 py-3 bg-[#d4834b] text-white font-semibold rounded-xl hover:bg-[#b86d3a]"
                 >
                   Save Changes
                 </button>
@@ -1712,5 +1712,20 @@ export default function AdminDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#d4834b] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 text-sm">Loading dashboard...</p>
+        </div>
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

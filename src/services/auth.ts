@@ -31,12 +31,15 @@ export async function authenticateUser(
     const serverSupabase = await createServerSupabaseClient();
     const email = usernameToEmail(username);
     
+    console.log('Attempting login with:', { username, email, password: '***' });
+    
     const { data, error } = await serverSupabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      console.error('Supabase auth error:', error);
       return { success: false, error: 'Invalid username or password' };
     }
 
@@ -44,8 +47,9 @@ export async function authenticateUser(
       return { success: false, error: 'Authentication failed' };
     }
 
-    // Check credential expiration
-    const { data: profile, error: profileError } = await serverSupabase
+    // Use admin client to check profile (bypasses RLS)
+    const adminClient = createAdminClient();
+    const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('role, expires_at')
       .eq('user_id', data.user.id)
@@ -116,8 +120,9 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Check credential expiration
-    const { data: profile, error: profileError } = await serverSupabase
+    // Use admin client to check profile (bypasses RLS)
+    const adminClient = createAdminClient();
+    const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('role, expires_at')
       .eq('user_id', user.id)
@@ -156,7 +161,9 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       return null;
     }
 
-    const { data: profile, error } = await serverSupabase
+    // Use admin client to get profile (bypasses RLS)
+    const adminClient = createAdminClient();
+    const { data: profile, error } = await adminClient
       .from('user_profiles')
       .select('*')
       .eq('user_id', user.id)

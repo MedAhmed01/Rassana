@@ -3,17 +3,20 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
-  --blue-50: #eff6ff;
-  --blue-100: #dbeafe;
-  --blue-200: #bfdbfe;
-  --blue-300: #93c5fd;
-  --blue-400: #60a5fa;
-  --blue-500: #3b82f6;
-  --blue-600: #2563eb;
-  --blue-700: #1d4ed8;
-  --blue-800: #1e40af;
-  --blue-900: #1e3a8a;
-  --blue-950: #0c1929;
+  --brand-primary: #d4834b;
+  --brand-light: #e09a68;
+  --brand-dark: #b86d3a;
+  --brand-50: #fdf6f1;
+  --brand-100: #fae9dc;
+  --brand-200: #f5d3b9;
+  --brand-300: #e9b48e;
+  --brand-400: #e09a68;
+  --brand-500: #d4834b;
+  --brand-600: #b86d3a;
+  --brand-700: #9a5830;
+  --brand-800: #7d4727;
+  --brand-900: #5f361e;
+  --brand-950: #3d2213;
 }
 
 @theme inline {
@@ -70,7 +73,7 @@ body {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #d4834b 0%, #b86d3a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -104,5 +107,5 @@ body {
 /* Focus ring */
 .focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 0 0 3px rgba(212, 131, 75, 0.3);
 }

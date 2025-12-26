@@ -61,11 +61,13 @@ export async function createUser(credentials: UserCredentials): Promise<CreateUs
     
     if (authError) {
       console.error('Auth user creation error:', authError);
+      console.error('Full error details:', JSON.stringify(authError, null, 2));
       if (authError.message.includes('already') || authError.message.includes('exists')) {
         return { success: false, error: 'Username already exists' };
       }
       if (authError.message.includes('Database error')) {
-        return { success: false, error: 'Database error - please check Supabase configuration and try again' };
+        // Return the full error for debugging
+        return { success: false, error: `Database error: ${authError.message}. Check server logs for details.` };
       }
       return { success: false, error: authError.message };
     }
