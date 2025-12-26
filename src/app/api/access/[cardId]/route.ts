@@ -43,8 +43,8 @@ export async function GET(
         .eq('user_id', user.id)
         .single();
       
-      const userSubscriptions = profile?.subscriptions || [];
-      const requiredSubscriptions = card.required_subscriptions || [];
+      const userSubscriptions = (profile?.subscriptions || []).map((s: string) => s.toLowerCase());
+      const requiredSubscriptions = (card.required_subscriptions || []).map((s: string) => s.toLowerCase());
       
       // If card has required subscriptions, check if user has at least one
       if (requiredSubscriptions.length > 0) {
