@@ -58,7 +58,7 @@ describe('Card Management Service - Property Tests', () => {
           expect(queriedUrl1).toBe(videoUrl1);
           
           // Update the video URL
-          const updateResult = await updateCard(cardId, videoUrl2);
+          const updateResult = await updateCard(cardId, { video_url: videoUrl2 });
           expect(updateResult.success).toBe(true);
           
           // Query should return the updated URL
