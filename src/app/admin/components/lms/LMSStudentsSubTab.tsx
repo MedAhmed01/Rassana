@@ -70,8 +70,8 @@ export function LMSStudentsSubTab({ onError }: Props) {
   const [accessLoading, setAccessLoading] = useState(false);
 
   useEffect(() => {
-    loadStudents();
-    loadPackages();
+    // Load students and packages in parallel on mount
+    Promise.all([loadStudents(), loadPackages()]);
   }, []);
 
   async function loadStudents() {

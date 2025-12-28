@@ -4,12 +4,16 @@ import { createPackage, getAllPackagesWithTopics } from '@/services/lms/packages
 
 export async function GET() {
   try {
-    const adminCheck = await isAdmin();
+    // Run admin check and data fetch in parallel
+    const [adminCheck, packages] = await Promise.all([
+      isAdmin(),
+      getAllPackagesWithTopics()
+    ]);
+
     if (!adminCheck) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const packages = await getAllPackagesWithTopics();
     return NextResponse.json({ packages });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch packages' }, { status: 500 });

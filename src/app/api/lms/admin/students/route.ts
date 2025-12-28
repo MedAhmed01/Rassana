@@ -5,18 +5,13 @@ import { createStudent } from '@/services/lms/students';
 
 export async function GET(request: NextRequest) {
   try {
-    const adminCheck = await isAdmin();
-    if (!adminCheck) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // Start admin check and data fetch in parallel
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const topicId = searchParams.get('topicId');
 
-    const supabase = createAdminClient();
-
-    // Single optimized query - get students with their packages in one call
+    // Build query
     let query = supabase
       .from('lms_students')
       .select(`
@@ -34,16 +29,26 @@ export async function GET(request: NextRequest) {
           package:lms_packages (id, name)
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     // Add search filter if provided
     if (search) {
       query = query.or(`username.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    const { data: students, error } = await query;
+    // Run admin check and query in parallel
+    const [adminCheck, { data: students, error }] = await Promise.all([
+      isAdmin(),
+      query
+    ]);
+
+    if (!adminCheck) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (error) {
+      console.error('Students fetch error:', error);
       return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
     }
 
