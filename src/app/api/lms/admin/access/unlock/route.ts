@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdmin, getCurrentUserProfile } from '@/services/auth';
+import { getAdminProfile } from '@/services/auth';
 import { unlockLesson, bulkUnlockLessons } from '@/services/lms/access';
 
 export async function POST(request: NextRequest) {
   try {
-    const adminCheck = await isAdmin();
-    if (!adminCheck) {
+    const { isAdmin, profile } = await getAdminProfile();
+    if (!isAdmin || !profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const adminProfile = await getCurrentUserProfile();
-    if (!adminProfile) {
-      return NextResponse.json({ error: 'Admin profile not found' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -27,17 +22,19 @@ export async function POST(request: NextRequest) {
 
     let result;
     if (lesson_ids.length === 1) {
-      result = await unlockLesson(student_id, lesson_ids[0], adminProfile.id);
+      result = await unlockLesson(student_id, lesson_ids[0], profile.id);
     } else {
-      result = await bulkUnlockLessons(student_id, lesson_ids, adminProfile.id);
+      result = await bulkUnlockLessons(student_id, lesson_ids, profile.id);
     }
 
     if (!result.success) {
+      console.error('Unlock failed:', { error: result.error, profileId: profile.id, studentId: student_id });
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, unlockedCount: lesson_ids.length });
   } catch (error) {
+    console.error('Unlock error:', error);
     return NextResponse.json({ error: 'Failed to unlock lessons' }, { status: 500 });
   }
 }

@@ -49,21 +49,16 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
         router.push('/lms/login');
         return;
       }
-      if (response.status === 403) {
+      if (!response.ok) {
         const data = await response.json();
-        if (data.expired) {
-          setExpired(true);
-          setError(data.error);
-        } else {
-          setError(data.error);
-        }
+        setError(data.error || 'Failed to load topic');
         return;
       }
-      if (response.ok) {
-        const data = await response.json();
-        setTopic(data.topic);
-      } else {
-        setError('Failed to load topic');
+      const data = await response.json();
+      setTopic(data.topic);
+      // Check if subscription is expired
+      if (data.subscription?.expired) {
+        setExpired(true);
       }
     } catch (err) {
       setError('Failed to load topic');

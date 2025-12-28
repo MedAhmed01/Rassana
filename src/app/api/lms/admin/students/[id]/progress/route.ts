@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin } from '@/services/auth';
-import { getStudentProgressSummary } from '@/services/lms/progress';
-import { getLessonAccessForStudent } from '@/services/lms/access';
-import { getSubscriptionsByStudent } from '@/services/lms/subscriptions';
 import { createAdminClient } from '@/lib/supabase';
 
 export async function GET(
@@ -10,73 +7,79 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminCheck = await isAdmin();
-    if (!adminCheck) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id: studentId } = await params;
     const { searchParams } = new URL(request.url);
     const topicId = searchParams.get('topicId');
 
-    // Get progress summary
-    const progressSummary = await getStudentProgressSummary(studentId);
-
-    // Get subscriptions
-    const subscriptions = await getSubscriptionsByStudent(studentId);
-
-    // If topicId specified, get detailed lesson access with lesson info
-    let lessons: any[] = [];
-    if (topicId) {
-      const supabase = createAdminClient();
-      
-      // Get all lessons for the topic with chapter info
-      const { data: topicLessons } = await supabase
-        .from('lms_lessons')
-        .select(`
+    // Run admin check and data queries in parallel
+    const supabase = createAdminClient();
+    
+    // Build lessons query
+    let lessonsQuery = supabase
+      .from('lms_lessons')
+      .select(`
+        id,
+        title,
+        chapter:lms_chapters!inner (
           id,
-          title,
-          chapter:lms_chapters!inner (
-            id,
-            name,
-            topic_id,
-            display_order
-          )
-        `)
-        .eq('chapter.topic_id', topicId)
-        .order('chapter(display_order)', { ascending: true })
-        .order('display_order', { ascending: true });
+          name,
+          topic_id,
+          display_order,
+          topic:lms_topics (id, name)
+        )
+      `)
+      .order('display_order', { ascending: true });
+    
+    if (topicId) {
+      lessonsQuery = lessonsQuery.eq('chapter.topic_id', topicId);
+    }
+    
+    // Run all queries in parallel
+    const [adminCheck, lessonsResult] = await Promise.all([
+      isAdmin(),
+      lessonsQuery
+    ]);
+
+    if (!adminCheck) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const topicLessons = lessonsResult.data;
+    let lessons: any[] = [];
+    
+    if (topicLessons && topicLessons.length > 0) {
+      const lessonIds = topicLessons.map((l: any) => l.id);
       
-      if (topicLessons) {
-        // Get access records
-        const lessonAccess = await getLessonAccessForStudent(studentId, topicId);
-        const accessMap = new Map(lessonAccess.map((a: any) => [a.lesson_id, a.is_unlocked]));
-        
-        // Get progress records
-        const { data: progressRecords } = await supabase
+      // Get access and progress records in parallel
+      const [accessResult, progressResult] = await Promise.all([
+        supabase
+          .from('lms_lesson_access')
+          .select('lesson_id, is_unlocked')
+          .eq('student_id', studentId)
+          .in('lesson_id', lessonIds),
+        supabase
           .from('lms_watch_progress')
           .select('lesson_id, max_percentage_watched')
           .eq('student_id', studentId)
-          .in('lesson_id', topicLessons.map((l: any) => l.id));
-        
-        const progressMap = new Map(progressRecords?.map((p: any) => [p.lesson_id, p.max_percentage_watched]) || []);
-        
-        lessons = topicLessons.map((lesson: any) => ({
-          lesson_id: lesson.id,
-          lesson_title: lesson.title,
-          chapter_name: lesson.chapter.name,
-          is_unlocked: accessMap.get(lesson.id) || false,
-          progress_percentage: Math.round(progressMap.get(lesson.id) || 0),
-        }));
-      }
+          .in('lesson_id', lessonIds)
+      ]);
+      
+      const accessMap = new Map(accessResult.data?.map((a: any) => [a.lesson_id, a.is_unlocked]) || []);
+      const progressMap = new Map(progressResult.data?.map((p: any) => [p.lesson_id, p.max_percentage_watched]) || []);
+      
+      lessons = topicLessons.map((lesson: any) => ({
+        lesson_id: lesson.id,
+        lesson_title: lesson.title,
+        chapter_name: lesson.chapter.name,
+        topic_name: lesson.chapter.topic?.name || 'Unknown Topic',
+        is_unlocked: accessMap.get(lesson.id) || false,
+        progress_percentage: Math.round(progressMap.get(lesson.id) || 0),
+      }));
     }
 
-    return NextResponse.json({ 
-      progress: progressSummary,
-      subscriptions,
-      lessons,
-    });
+    return NextResponse.json({ lessons });
   } catch (error) {
+    console.error('Error fetching student progress:', error);
     return NextResponse.json({ error: 'Failed to fetch student progress' }, { status: 500 });
   }
 }

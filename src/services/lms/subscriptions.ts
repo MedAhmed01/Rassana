@@ -175,23 +175,50 @@ export async function getAllSubscriptions(): Promise<SubscriptionWithDetails[]> 
 
 /**
  * Check if a student has an active subscription to a topic
+ * Checks both direct subscriptions and package-based access
  */
 export async function checkSubscriptionActive(studentId: string, topicId: string): Promise<boolean> {
   try {
     const supabase = createAdminClient();
     
-    const { data, error } = await supabase
+    // Check direct subscription first
+    const { data: directSub } = await supabase
       .from('lms_subscriptions')
       .select('id, expires_at')
       .eq('student_id', studentId)
       .eq('topic_id', topicId)
       .single();
     
-    if (error || !data) {
-      return false;
+    if (directSub && new Date(directSub.expires_at) > new Date()) {
+      return true;
     }
     
-    return new Date(data.expires_at) > new Date();
+    // Check package-based access
+    const { data: packageAccess } = await supabase
+      .from('lms_student_packages')
+      .select(`
+        id,
+        expires_at,
+        package:lms_packages (
+          topics:lms_package_topics (
+            topic_id
+          )
+        )
+      `)
+      .eq('student_id', studentId)
+      .gt('expires_at', new Date().toISOString());
+    
+    if (packageAccess && packageAccess.length > 0) {
+      // Check if any active package includes this topic
+      for (const pkg of packageAccess) {
+        const topics = (pkg.package as any)?.topics || [];
+        if (topics.some((t: any) => t.topic_id === topicId)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   } catch (err) {
     return false;
   }

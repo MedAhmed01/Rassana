@@ -28,6 +28,7 @@ interface LessonAccess {
   lesson_id: string;
   lesson_title: string;
   chapter_name: string;
+  topic_name?: string;
   is_unlocked: boolean;
   progress_percentage: number;
 }
@@ -252,9 +253,17 @@ export function LMSStudentsSubTab({ onError }: Props) {
     
     setAccessLoading(true);
     try {
+      // Get lessons that should be unlocked (currently selected)
       const toUnlock = Array.from(selectedLessons);
+      
+      // Get lessons that should be locked (not selected but exist in lessonAccess)
+      const toLock = lessonAccess
+        .filter(l => !selectedLessons.has(l.lesson_id))
+        .map(l => l.lesson_id);
+      
+      // Unlock selected lessons
       if (toUnlock.length > 0) {
-        await fetch('/api/lms/admin/access/unlock', {
+        const unlockResponse = await fetch('/api/lms/admin/access/unlock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -262,14 +271,17 @@ export function LMSStudentsSubTab({ onError }: Props) {
             lesson_ids: toUnlock,
           }),
         });
+        
+        if (!unlockResponse.ok) {
+          const data = await unlockResponse.json();
+          onError(data.error || 'Failed to unlock lessons');
+          return;
+        }
       }
       
-      const toLock = lessonAccess
-        .filter(l => l.is_unlocked && !selectedLessons.has(l.lesson_id))
-        .map(l => l.lesson_id);
-      
+      // Lock unselected lessons
       if (toLock.length > 0) {
-        await fetch('/api/lms/admin/access/lock', {
+        const lockResponse = await fetch('/api/lms/admin/access/lock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -277,6 +289,12 @@ export function LMSStudentsSubTab({ onError }: Props) {
             lesson_ids: toLock,
           }),
         });
+        
+        if (!lockResponse.ok) {
+          const data = await lockResponse.json();
+          onError(data.error || 'Failed to lock lessons');
+          return;
+        }
       }
       
       setAccessModalOpen(false);
@@ -289,16 +307,16 @@ export function LMSStudentsSubTab({ onError }: Props) {
   }
 
   const lessonsByChapter = lessonAccess.reduce((acc, lesson) => {
-    if (!acc[lesson.chapter_name]) {
-      acc[lesson.chapter_name] = [];
+    const key = lesson.topic_name ? `${lesson.topic_name} > ${lesson.chapter_name}` : lesson.chapter_name;
+    if (!acc[key]) {
+      acc[key] = [];
     }
-    acc[lesson.chapter_name].push(lesson);
+    acc[key].push(lesson);
     return acc;
   }, {} as Record<string, LessonAccess[]>);
 
   // Suppress unused variable warnings
   void selectedTopicId;
-  void openAccessModal;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -443,6 +461,15 @@ export function LMSStudentsSubTab({ onError }: Props) {
                   
                   {/* Action Buttons */}
                   <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => openAccessModal(student, '')}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-800/80 flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-green-500/20 transition-all active:scale-95"
+                      title="Manage lesson access"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                    </button>
                     <button
                       onClick={() => openEditModal(student)}
                       className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all active:scale-95"
@@ -821,13 +848,21 @@ export function LMSStudentsSubTab({ onError }: Props) {
                                   <span className="text-xs text-slate-400">{lesson.progress_percentage}%</span>
                                 </div>
                               </div>
-                              <span className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded ${
-                                lesson.is_unlocked 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-slate-700 text-slate-400'
-                              }`}>
-                                {lesson.is_unlocked ? 'Unlocked' : 'Locked'}
-                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleLessonSelection(lesson.lesson_id);
+                                }}
+                                className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded cursor-pointer hover:opacity-80 transition-opacity ${
+                                  selectedLessons.has(lesson.lesson_id)
+                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                                }`}
+                              >
+                                {selectedLessons.has(lesson.lesson_id) ? 'Unlocked' : 'Locked'}
+                              </button>
                             </label>
                           ))}
                         </div>

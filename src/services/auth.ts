@@ -188,19 +188,19 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
 export async function validateSession(): Promise<SessionValidation> {
   try {
     const serverSupabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
+    
+    // Get user - this is required first
     const { data: { user }, error } = await serverSupabase.auth.getUser();
 
     if (error || !user) {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Use admin client to check profile (bypasses RLS)
-    const adminClient = createAdminClient();
-    
-    // First get basic profile info
+    // Get all profile data in a single query
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
-      .select('role, expires_at')
+      .select('role, expires_at, session_token, force_logout_at, last_login_at')
       .eq('user_id', user.id)
       .single();
 
@@ -215,45 +215,30 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'expired' };
     }
 
-    // Try to check session columns (may not exist if migrations not applied)
-    let sessionToken: string | null = null;
-    try {
-      const { data: sessionData } = await adminClient
-        .from('user_profiles')
-        .select('session_token, force_logout_at, last_login_at')
-        .eq('user_id', user.id)
-        .single();
-
-      if (sessionData) {
-        sessionToken = sessionData.session_token;
+    // Check session validity for students
+    if (profile.role === 'student') {
+      // Check if user was force logged out
+      if (profile.force_logout_at && profile.last_login_at) {
+        const forceLogoutAt = new Date(profile.force_logout_at);
+        const lastLoginAt = new Date(profile.last_login_at);
         
-        // Check if user was force logged out (for students)
-        if (profile.role === 'student' && sessionData.force_logout_at && sessionData.last_login_at) {
-          const forceLogoutAt = new Date(sessionData.force_logout_at);
-          const lastLoginAt = new Date(sessionData.last_login_at);
-          
-          // If force_logout_at is after last_login_at, session is invalid
-          if (forceLogoutAt > lastLoginAt) {
-            await serverSupabase.auth.signOut();
-            return { valid: false, reason: 'force_logout' };
-          }
-        }
-
-        // Check if session token was cleared (another device logged in or admin force logout)
-        if (profile.role === 'student' && !sessionData.session_token) {
+        if (forceLogoutAt > lastLoginAt) {
           await serverSupabase.auth.signOut();
-          return { valid: false, reason: 'session_invalidated' };
+          return { valid: false, reason: 'force_logout' };
         }
       }
-    } catch (e) {
-      console.log('Session columns may not exist yet:', e);
-      // Continue without session validation if columns don't exist
+
+      // Check if session token was cleared
+      if (!profile.session_token) {
+        await serverSupabase.auth.signOut();
+        return { valid: false, reason: 'session_invalidated' };
+      }
     }
 
     return {
       valid: true,
       role: profile.role as 'admin' | 'student',
-      sessionToken: sessionToken ?? undefined,
+      sessionToken: profile.session_token ?? undefined,
     };
   } catch (err) {
     console.error('Session validation error:', err);
@@ -267,14 +252,15 @@ export async function validateSession(): Promise<SessionValidation> {
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
     const serverSupabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
+    
+    // Get user
     const { data: { user } } = await serverSupabase.auth.getUser();
     
     if (!user) {
       return null;
     }
 
-    // Use admin client to get profile (bypasses RLS)
-    const adminClient = createAdminClient();
     const { data: profile, error } = await adminClient
       .from('user_profiles')
       .select('*')
@@ -288,6 +274,46 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
     return profile as UserProfile;
   } catch (err) {
     return null;
+  }
+}
+
+/**
+ * Check if the current user has admin role and get their profile in one call
+ * More efficient than calling isAdmin() and getCurrentUserProfile() separately
+ */
+export async function getAdminProfile(): Promise<{ isAdmin: boolean; profile: UserProfile | null }> {
+  try {
+    const serverSupabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
+    
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    
+    if (!user) {
+      return { isAdmin: false, profile: null };
+    }
+
+    const { data: profile, error } = await adminClient
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error || !profile) {
+      return { isAdmin: false, profile: null };
+    }
+
+    // Check expiration
+    const expiresAt = new Date(profile.expires_at);
+    if (expiresAt < new Date()) {
+      return { isAdmin: false, profile: null };
+    }
+
+    return { 
+      isAdmin: profile.role === 'admin', 
+      profile: profile as UserProfile 
+    };
+  } catch (err) {
+    return { isAdmin: false, profile: null };
   }
 }
 

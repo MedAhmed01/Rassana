@@ -7,7 +7,7 @@ import type { LMSLessonAccess, LMSResult } from '@/types/lms';
 export async function unlockLesson(
   studentId: string, 
   lessonId: string, 
-  adminId: string
+  _adminId?: string
 ): Promise<LMSResult<LMSLessonAccess>> {
   try {
     const supabase = createAdminClient();
@@ -19,7 +19,6 @@ export async function unlockLesson(
         lesson_id: lessonId,
         is_unlocked: true,
         unlocked_at: new Date().toISOString(),
-        unlocked_by: adminId,
         was_unlocked_before_expiry: true,
       }, {
         onConflict: 'student_id,lesson_id',
@@ -72,7 +71,7 @@ export async function lockLesson(studentId: string, lessonId: string): Promise<L
 export async function bulkUnlockLessons(
   studentId: string, 
   lessonIds: string[], 
-  adminId: string
+  _adminId?: string
 ): Promise<LMSResult<void>> {
   try {
     const supabase = createAdminClient();
@@ -82,7 +81,6 @@ export async function bulkUnlockLessons(
       lesson_id: lessonId,
       is_unlocked: true,
       unlocked_at: new Date().toISOString(),
-      unlocked_by: adminId,
       was_unlocked_before_expiry: true,
     }));
     
