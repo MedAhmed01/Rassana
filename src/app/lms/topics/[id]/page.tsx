@@ -13,6 +13,7 @@ interface Lesson {
   progress?: {
     max_percentage_watched: number;
     last_position_seconds: number;
+    updated_at?: string;
   };
 }
 
