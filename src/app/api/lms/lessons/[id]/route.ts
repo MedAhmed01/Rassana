@@ -103,7 +103,7 @@ export async function GET(
     const accessMap = new Map(allAccess?.map((a: any) => [a.lesson_id, a.is_unlocked]) || []);
     const progressMap = new Map(allProgress?.map((p: any) => [p.lesson_id, p.max_percentage_watched]) || []);
 
-    const playlist = (allChapters || []).map(chapter => ({
+    const playlist = (allChapters || []).map((chapter: any) => ({
       id: chapter.id,
       name: chapter.name,
       display_order: chapter.display_order,
