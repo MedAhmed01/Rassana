@@ -27,6 +27,22 @@ interface Lesson {
   };
 }
 
+interface PlaylistLesson {
+  id: string;
+  title: string;
+  duration_seconds?: number;
+  display_order: number;
+  is_unlocked: boolean;
+  progress: number;
+}
+
+interface PlaylistChapter {
+  id: string;
+  name: string;
+  display_order: number;
+  lessons: PlaylistLesson[];
+}
+
 interface StudentInfo {
   username: string;
   student_id: string;
@@ -63,6 +79,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ id: str
   
   // Data state
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [playlist, setPlaylist] = useState<PlaylistChapter[]>([]);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,6 +104,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ id: str
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [isIPhone, setIsIPhone] = useState(false);
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   
   // Watermark position
   const [watermarkPosition, setWatermarkPosition] = useState({ x: 10, y: 10 });
@@ -97,6 +115,32 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ id: str
     const isIPhoneDevice = /iPhone/i.test(userAgent) && !/iPad/i.test(userAgent);
     setIsIPhone(isIPhoneDevice);
   }, []);
+
+  // Initialize expanded chapters when playlist loads
+  useEffect(() => {
+    if (playlist.length > 0) {
+      // Find the chapter containing the current lesson and expand it
+      const currentChapter = playlist.find(chapter => 
+        chapter.lessons.some(l => l.id === lessonId)
+      );
+      if (currentChapter) {
+        setExpandedChapters(new Set([currentChapter.id]));
+      }
+    }
+  }, [playlist, lessonId]);
+
+  // Toggle chapter expansion
+  const toggleChapter = (chapterId: string) => {
+    setExpandedChapters(prev => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) {
+        next.delete(chapterId);
+      } else {
+        next.add(chapterId);
+      }
+      return next;
+    });
+  };
 
   // Load lesson and student info
   useEffect(() => {
@@ -167,6 +211,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         const data = await response.json();
         setLesson(data.lesson);
+        setPlaylist(data.playlist || []);
         if (data.lesson.progress?.last_position_seconds) {
           setCurrentTime(data.lesson.progress.last_position_seconds);
         }
@@ -661,6 +706,131 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ id: str
               <p className="text-slate-300 text-sm">After watching this lesson, take notes and send them to your instructor to unlock the next lesson.</p>
             </div>
           </div>
+
+          {/* Playlist */}
+          {playlist.length > 0 && (
+            <div className="bg-slate-800 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Course Lessons</h3>
+              <div className="space-y-4">
+                {playlist.map((chapter) => {
+                  const isExpanded = expandedChapters.has(chapter.id);
+                  const hasCurrentLesson = chapter.lessons.some(l => l.id === lessonId);
+                  
+                  return (
+                    <div key={chapter.id}>
+                      {/* Chapter Header - Clickable */}
+                      <button
+                        onClick={() => toggleChapter(chapter.id)}
+                        className="w-full flex items-center gap-2 mb-2 text-left hover:text-[#ff8240] transition-colors"
+                      >
+                        <svg 
+                          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <h4 className={`text-sm font-semibold flex-1 ${hasCurrentLesson ? 'text-[#ff8240]' : 'text-slate-400'}`}>
+                          {chapter.name}
+                        </h4>
+                        <span className="text-xs text-slate-500">
+                          {chapter.lessons.length} lesson{chapter.lessons.length !== 1 ? 's' : ''}
+                        </span>
+                      </button>
+                      
+                      {/* Lessons - Collapsible */}
+                      {isExpanded && (
+                        <div className="space-y-1">
+                          {chapter.lessons.map((playlistLesson, idx) => {
+                            const isCurrentLesson = playlistLesson.id === lessonId;
+                            const isCompleted = playlistLesson.progress >= 90;
+                            
+                            return (
+                              <Link
+                                key={playlistLesson.id}
+                                href={playlistLesson.is_unlocked ? `/lms/lessons/${playlistLesson.id}` : '#'}
+                                onClick={(e) => !playlistLesson.is_unlocked && e.preventDefault()}
+                                className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                                  isCurrentLesson
+                                    ? 'bg-[#ff8240]/20 border border-[#ff8240]/50'
+                                    : playlistLesson.is_unlocked
+                                      ? 'hover:bg-slate-700/50 cursor-pointer'
+                                      : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                {/* Status Icon */}
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                  isCompleted
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : isCurrentLesson
+                                      ? 'bg-[#ff8240]/30 text-[#ff8240]'
+                                      : playlistLesson.is_unlocked
+                                        ? 'bg-slate-700 text-slate-400'
+                                        : 'bg-slate-700/50 text-slate-500'
+                                }`}>
+                                  {isCompleted ? (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : isCurrentLesson && isPlaying ? (
+                                    <div className="flex items-center justify-center gap-0.5">
+                                      <div className="w-0.5 bg-[#ff8240] rounded-full animate-pulse" style={{ height: '8px', animation: 'pulse 0.8s ease-in-out infinite' }} />
+                                      <div className="w-0.5 bg-[#ff8240] rounded-full animate-pulse" style={{ height: '12px', animation: 'pulse 0.8s ease-in-out 0.2s infinite' }} />
+                                      <div className="w-0.5 bg-[#ff8240] rounded-full animate-pulse" style={{ height: '6px', animation: 'pulse 0.8s ease-in-out 0.4s infinite' }} />
+                                    </div>
+                                  ) : isCurrentLesson ? (
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                  ) : playlistLesson.is_unlocked ? (
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                  )}
+                                </div>
+
+                                {/* Lesson Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate ${
+                                    isCurrentLesson ? 'text-[#ff8240]' : 'text-white'
+                                  }`}>
+                                    {idx + 1}. {playlistLesson.title}
+                                  </p>
+                                  {playlistLesson.progress > 0 && playlistLesson.progress < 90 && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-full"
+                                          style={{ width: `${playlistLesson.progress}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-xs text-slate-400">{Math.round(playlistLesson.progress)}%</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Duration */}
+                                {playlistLesson.duration_seconds && (
+                                  <span className="text-xs text-slate-400 flex-shrink-0">
+                                    {formatTime(playlistLesson.duration_seconds)}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

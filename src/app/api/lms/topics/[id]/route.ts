@@ -70,7 +70,7 @@ export async function GET(
       // Get progress
       supabase
         .from('lms_watch_progress')
-        .select('lesson_id, max_percentage_watched')
+        .select('lesson_id, max_percentage_watched, updated_at')
         .eq('student_id', studentId)
     ]);
 
