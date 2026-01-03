@@ -74,7 +74,14 @@ function AdminDashboardContent() {
     checkAuth();
   }, []);
   
-  // Removed auto-loading of QR codes - now loaded on-demand only
+  // Auto-load QR codes for all cards when cards are loaded
+  useEffect(() => {
+    cards.forEach(card => {
+      if (!cardQrCodes[card.card_id] && !loadingQr[card.card_id]) {
+        loadQrCode(card.card_id);
+      }
+    });
+  }, [cards]);
   
   async function checkAuth() {
     try {
