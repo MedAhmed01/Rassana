@@ -4,7 +4,7 @@ import { authenticateUser } from '@/services/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { username, password, deviceId } = body;
     
     if (!username || !password) {
       return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const result = await authenticateUser(username, password);
+    const result = await authenticateUser(username, password, deviceId);
     
     if (!result.success) {
       return NextResponse.json(

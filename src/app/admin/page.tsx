@@ -13,6 +13,9 @@ interface User {
   subscriptions?: string[];
   expires_at: string;
   created_at: string;
+  device_id?: string;
+  device_bound_at?: string;
+  device_binding_enabled?: boolean;
 }
 
 interface Card {
@@ -254,6 +257,53 @@ function AdminDashboardContent() {
     } catch (err) {
       console.error('Force logout error:', err);
       setError('Network error while forcing logout');
+    }
+  }
+
+  async function handleToggleDeviceBinding(userId: string, username: string, currentEnabled: boolean) {
+    const action = currentEnabled ? 'disable' : 'enable';
+    if (!confirm(`${action === 'enable' ? 'Enable' : 'Disable'} device binding for "${username}"?${action === 'disable' ? ' This will also clear their bound device.' : ''}`)) return;
+    
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/device-binding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !currentEnabled }),
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to toggle device binding');
+        return;
+      }
+      
+      loadUsers();
+      alert(data.message);
+    } catch (err) {
+      console.error('Device binding toggle error:', err);
+      setError('Network error while toggling device binding');
+    }
+  }
+
+  async function handleResetDevice(userId: string, username: string) {
+    if (!confirm(`Reset device for "${username}"? This will allow them to login from a new device.`)) return;
+    
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/device-binding`, { method: 'DELETE' });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to reset device');
+        return;
+      }
+      
+      loadUsers();
+      alert(data.message);
+    } catch (err) {
+      console.error('Device reset error:', err);
+      setError('Network error while resetting device');
     }
   }
   
@@ -953,6 +1003,38 @@ function AdminDashboardContent() {
                             </svg>
                           </button>
                         </div>
+
+                        {/* Device Binding Controls - Students Only */}
+                        {user.role === 'student' && (
+                          <div className="flex gap-2 pt-2 border-t border-slate-100 mt-2">
+                            <button
+                              onClick={() => handleToggleDeviceBinding(user.user_id, user.username, user.device_binding_enabled || false)}
+                              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 font-medium text-xs rounded-xl transition-colors ${
+                                user.device_binding_enabled
+                                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-500'
+                              }`}
+                              title={user.device_binding_enabled ? 'Device binding is ON - Click to disable' : 'Device binding is OFF - Click to enable'}
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              {user.device_binding_enabled ? 'Device Lock ON' : 'Device Lock OFF'}
+                            </button>
+                            {user.device_binding_enabled && user.device_id && (
+                              <button
+                                onClick={() => handleResetDevice(user.user_id, user.username)}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 font-medium text-xs rounded-xl transition-colors"
+                                title="Reset device - Allow login from new device"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Expired/Expiring Soon Banner */}

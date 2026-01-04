@@ -22,10 +22,12 @@ export function emailToUsername(email: string): string {
 /**
  * Authenticate a user with username/phone and password
  * Checks credential expiration and enforces single session for students
+ * Optionally enforces device binding if enabled for the student
  */
 export async function authenticateUser(
   usernameOrPhone: string,
-  password: string
+  password: string,
+  deviceId?: string
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
@@ -35,13 +37,22 @@ export async function authenticateUser(
     const isPhone = /^[\d+][\d\s-]*$/.test(usernameOrPhone.trim());
     
     let email: string;
-    let preCheckProfile: { user_id: string; username: string; role: string; expires_at: string; session_token?: string; last_login_at?: string } | null = null;
+    let preCheckProfile: { 
+      user_id: string; 
+      username: string; 
+      role: string; 
+      expires_at: string; 
+      session_token?: string; 
+      last_login_at?: string;
+      device_id?: string;
+      device_binding_enabled?: boolean;
+    } | null = null;
     
     if (isPhone) {
       // Look up profile by phone number
       const { data: profile } = await adminClient
         .from('user_profiles')
-        .select('user_id, username, role, expires_at, session_token, last_login_at')
+        .select('user_id, username, role, expires_at, session_token, last_login_at, device_id, device_binding_enabled')
         .eq('phone', usernameOrPhone.trim())
         .single();
       
@@ -54,7 +65,7 @@ export async function authenticateUser(
       // Look up profile by username
       const { data: profile } = await adminClient
         .from('user_profiles')
-        .select('user_id, username, role, expires_at, session_token, last_login_at')
+        .select('user_id, username, role, expires_at, session_token, last_login_at, device_id, device_binding_enabled')
         .eq('username', usernameOrPhone.trim())
         .single();
       
@@ -63,13 +74,17 @@ export async function authenticateUser(
     }
     
     // Check for existing active session BEFORE authenticating (students only)
-    if (preCheckProfile && preCheckProfile.role === 'student' && preCheckProfile.session_token) {
-      // There's an active session - block login
-      return { 
-        success: false, 
-        error: 'This account is already logged in on another device. Please logout from the other device first or contact an administrator.' 
-      };
+    // Only enforce single-device restriction when device_binding_enabled is true
+    if (preCheckProfile && preCheckProfile.role === 'student' && preCheckProfile.device_binding_enabled) {
+      // Device binding is enabled - check if trying to login from a different device
+      if (preCheckProfile.device_id && deviceId && preCheckProfile.device_id !== deviceId) {
+        return { 
+          success: false, 
+          error: 'This account is locked to another device. Please contact an administrator to reset your device.' 
+        };
+      }
     }
+    // When device_binding_enabled is false, allow login from any device without restrictions
     
     console.log('Attempting login with:', { usernameOrPhone, email, password: '***' });
     
@@ -90,7 +105,7 @@ export async function authenticateUser(
     // Use admin client to check profile (bypasses RLS)
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
-      .select('role, expires_at')
+      .select('role, expires_at, device_binding_enabled, device_id')
       .eq('user_id', data.user.id)
       .single();
 
@@ -114,12 +129,20 @@ export async function authenticateUser(
     let sessionToken: string | undefined;
     try {
       sessionToken = uuidv4();
+      const updateData: Record<string, unknown> = { 
+        session_token: sessionToken,
+        last_login_at: new Date().toISOString(),
+      };
+
+      // Bind device if device binding is enabled and no device is bound yet
+      if (profile.device_binding_enabled && deviceId && !profile.device_id) {
+        updateData.device_id = deviceId;
+        updateData.device_bound_at = new Date().toISOString();
+      }
+
       const { error: updateError } = await adminClient
         .from('user_profiles')
-        .update({ 
-          session_token: sessionToken,
-          last_login_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('user_id', data.user.id);
       
       if (updateError) {
@@ -200,7 +223,7 @@ export async function validateSession(): Promise<SessionValidation> {
     // Get all profile data in a single query
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
-      .select('role, expires_at, session_token, force_logout_at, last_login_at')
+      .select('role, expires_at, session_token, force_logout_at, last_login_at, device_binding_enabled')
       .eq('user_id', user.id)
       .single();
 
@@ -215,8 +238,8 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'expired' };
     }
 
-    // Check session validity for students
-    if (profile.role === 'student') {
+    // Check session validity for students - only when device binding is enabled
+    if (profile.role === 'student' && profile.device_binding_enabled) {
       // Check if user was force logged out
       if (profile.force_logout_at && profile.last_login_at) {
         const forceLogoutAt = new Date(profile.force_logout_at);
@@ -228,7 +251,7 @@ export async function validateSession(): Promise<SessionValidation> {
         }
       }
 
-      // Check if session token was cleared
+      // Check if session token was cleared (only when device binding is enabled)
       if (!profile.session_token) {
         await serverSupabase.auth.signOut();
         return { valid: false, reason: 'session_invalidated' };

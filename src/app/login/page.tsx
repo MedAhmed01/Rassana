@@ -5,6 +5,50 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 type LoginMode = 'cards' | 'lms';
 
+/**
+ * Generate a unique device ID based on browser fingerprint
+ * This is stored in localStorage to persist across sessions
+ */
+function getDeviceId(): string {
+  const DEVICE_ID_KEY = 'rassana_device_id';
+  
+  // Check if we already have a device ID
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  
+  if (!deviceId) {
+    // Generate a new device ID based on browser characteristics
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillText('device-fingerprint', 2, 2);
+    }
+    
+    const fingerprint = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      canvas.toDataURL(),
+    ].join('|');
+    
+    // Create a hash of the fingerprint
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+      const char = fingerprint.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    deviceId = 'dev_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  
+  return deviceId;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,11 +87,14 @@ function LoginForm() {
     
     try {
       if (loginMode === 'cards') {
+        // Get device ID for device binding
+        const deviceId = getDeviceId();
+        
         // Card system login
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, deviceId }),
         });
         
         const data = await response.json();

@@ -24,6 +24,9 @@ export interface UserProfile {
   expires_at: string;
   created_at: string;
   updated_at: string;
+  device_id?: string;
+  device_bound_at?: string;
+  device_binding_enabled?: boolean;
 }
 
 // Credentials for creating a new user
