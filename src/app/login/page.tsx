@@ -6,47 +6,38 @@ import { useRouter, useSearchParams } from 'next/navigation';
 type LoginMode = 'cards' | 'lms';
 
 /**
- * Generate a unique device ID based on browser fingerprint
- * This is stored in localStorage to persist across sessions
+ * Generate a unique device ID based on device characteristics (not browser-specific)
+ * Uses screen resolution, timezone, and hardware info that stays consistent across browsers
  */
 function getDeviceId(): string {
-  const DEVICE_ID_KEY = 'rassana_device_id';
+  // Use device-level characteristics that are the same across all browsers on the same device
+  const fingerprint = [
+    // Screen characteristics (same across browsers on same device)
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+    screen.pixelDepth,
+    // Timezone (same across browsers)
+    new Date().getTimezoneOffset(),
+    // Hardware concurrency (CPU cores - same across browsers)
+    navigator.hardwareConcurrency || 0,
+    // Device memory (same across browsers, if available)
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0,
+    // Platform (OS - same across browsers)
+    navigator.platform,
+    // Max touch points (same across browsers)
+    navigator.maxTouchPoints || 0,
+  ].join('|');
   
-  // Check if we already have a device ID
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-  
-  if (!deviceId) {
-    // Generate a new device ID based on browser characteristics
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.textBaseline = 'top';
-      ctx.font = '14px Arial';
-      ctx.fillText('device-fingerprint', 2, 2);
-    }
-    
-    const fingerprint = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + 'x' + screen.height,
-      screen.colorDepth,
-      new Date().getTimezoneOffset(),
-      canvas.toDataURL(),
-    ].join('|');
-    
-    // Create a hash of the fingerprint
-    let hash = 0;
-    for (let i = 0; i < fingerprint.length; i++) {
-      const char = fingerprint.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    
-    deviceId = 'dev_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  // Create a hash of the fingerprint
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    const char = fingerprint.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
   }
   
-  return deviceId;
+  return 'dev_' + Math.abs(hash).toString(36);
 }
 
 function LoginForm() {
