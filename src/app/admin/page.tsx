@@ -41,12 +41,12 @@ function AdminDashboardContent() {
   const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs' | 'lms'>('users');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [users, setUsers] = useState<User[]>([]);
   const [newUser, setNewUser] = useState({ username: '', password: '', phone: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ username: '', password: '', phone: '', role: 'student', subscriptions: [] as string[], expires_at: '' });
-  
+
   const [cards, setCards] = useState<Card[]>([]);
   const [newCard, setNewCard] = useState({ card_id: '', video_url: '', title: '', subject: '', required_subscriptions: [] as string[] });
   const [editingCard, setEditingCard] = useState<Card | null>(null);
@@ -60,23 +60,23 @@ function AdminDashboardContent() {
   const [cardSearchQuery, setCardSearchQuery] = useState('');
   const [cardCategoryFilter, setCardCategoryFilter] = useState<string>('all');
   const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
-  
+
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
-  
-  const availableSubscriptions = ['math', 'physics', 'science'];
-  
+
+  const availableSubscriptions = ['math', 'physics', 'science', 'bmath', 'bphysics', 'bscience'];
+
   function toggleSubscription(current: string[], subscription: string): string[] {
     if (current.includes(subscription)) {
       return current.filter(s => s !== subscription);
     }
     return [...current, subscription];
   }
-  
+
   useEffect(() => {
     checkAuth();
   }, []);
-  
+
   // Auto-load QR codes for all cards when cards are loaded
   useEffect(() => {
     cards.forEach(card => {
@@ -85,17 +85,17 @@ function AdminDashboardContent() {
       }
     });
   }, [cards]);
-  
+
   async function checkAuth() {
     try {
       const response = await fetch('/api/auth/session');
       const data = await response.json();
-      
+
       if (!response.ok || data.role !== 'admin') {
         router.push('/login');
         return;
       }
-      
+
       setLoading(false);
       loadUsers();
       loadCards();
@@ -104,7 +104,7 @@ function AdminDashboardContent() {
       router.push('/login');
     }
   }
-  
+
   async function loadUsers() {
     const response = await fetch('/api/admin/users');
     if (response.ok) {
@@ -112,7 +112,7 @@ function AdminDashboardContent() {
       setUsers(data.users || []);
     }
   }
-  
+
   async function loadCards() {
     const response = await fetch('/api/admin/cards');
     if (response.ok) {
@@ -120,21 +120,21 @@ function AdminDashboardContent() {
       setCards(data.cards || []);
     }
   }
-  
+
   async function loadLogs() {
     const params = new URLSearchParams();
     if (logFilters.userId) params.set('userId', logFilters.userId);
     if (logFilters.cardId) params.set('cardId', logFilters.cardId);
     if (logFilters.startDate) params.set('startDate', logFilters.startDate);
     if (logFilters.endDate) params.set('endDate', logFilters.endDate);
-    
+
     const response = await fetch(`/api/admin/logs?${params}`);
     if (response.ok) {
       const data = await response.json();
       setLogs(data.logs || []);
     }
   }
-  
+
   async function loadQrCode(cardId: string) {
     setLoadingQr(prev => ({ ...prev, [cardId]: true }));
     try {
@@ -149,12 +149,12 @@ function AdminDashboardContent() {
       setLoadingQr(prev => ({ ...prev, [cardId]: false }));
     }
   }
-  
+
   function getAccessUrl(cardId: string): string {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     return `${baseUrl}/access/${encodeURIComponent(cardId)}`;
   }
-  
+
   async function copyAccessLink(cardId: string) {
     const url = getAccessUrl(cardId);
     try {
@@ -165,72 +165,72 @@ function AdminDashboardContent() {
       setError('Failed to copy link');
     }
   }
-  
+
   async function handleCreateUser(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    
+
     const response = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newUser),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       setError(data.error || 'Failed to create user');
       return;
     }
-    
+
     setNewUser({ username: '', password: '', phone: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
-  
+
   async function handleUpdateUser(e: React.FormEvent) {
     e.preventDefault();
     if (!editingUser) return;
-    
+
     setError('');
-    
+
     console.log('Updating user with data:', editForm);
-    
+
     const response = await fetch(`/api/admin/users/${editingUser.user_id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editForm),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       console.error('Update error:', data);
       setError(data.error || 'Failed to update user');
       return;
     }
-    
+
     console.log('Update successful');
     setEditingUser(null);
     setEditForm({ username: '', password: '', phone: '', role: 'student', subscriptions: [], expires_at: '' });
     loadUsers();
   }
-  
+
   async function handleDeleteUser(userId: string, username: string) {
     if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
-    
+
     setError('');
     try {
       console.log('Deleting user:', userId);
       const response = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
       const data = await response.json();
       console.log('Delete response:', data);
-      
+
       if (!response.ok) {
         setError(data.error || 'Failed to delete user');
         console.error('Delete user error:', data);
         return;
       }
-      
+
       // Remove user from local state immediately
       setUsers(prev => prev.filter(u => u.user_id !== userId));
       console.log('User deleted successfully');
@@ -242,17 +242,17 @@ function AdminDashboardContent() {
 
   async function handleForceLogout(userId: string, username: string) {
     if (!confirm(`Force logout "${username}"? This will end their current session.`)) return;
-    
+
     setError('');
     try {
       const response = await fetch(`/api/admin/users/${userId}/force-logout`, { method: 'POST' });
       const data = await response.json();
-      
+
       if (!response.ok) {
         setError(data.error || 'Failed to force logout user');
         return;
       }
-      
+
       alert(`${username} has been logged out successfully.`);
     } catch (err) {
       console.error('Force logout error:', err);
@@ -263,7 +263,7 @@ function AdminDashboardContent() {
   async function handleToggleDeviceBinding(userId: string, username: string, currentEnabled: boolean) {
     const action = currentEnabled ? 'disable' : 'enable';
     if (!confirm(`${action === 'enable' ? 'Enable' : 'Disable'} device binding for "${username}"?${action === 'disable' ? ' This will also clear their bound device.' : ''}`)) return;
-    
+
     setError('');
     try {
       const response = await fetch(`/api/admin/users/${userId}/device-binding`, {
@@ -272,12 +272,12 @@ function AdminDashboardContent() {
         body: JSON.stringify({ enabled: !currentEnabled }),
       });
       const data = await response.json();
-      
+
       if (!response.ok) {
         setError(data.error || 'Failed to toggle device binding');
         return;
       }
-      
+
       loadUsers();
       alert(data.message);
     } catch (err) {
@@ -288,17 +288,17 @@ function AdminDashboardContent() {
 
   async function handleResetDevice(userId: string, username: string) {
     if (!confirm(`Reset device for "${username}"? This will allow them to login from a new device.`)) return;
-    
+
     setError('');
     try {
       const response = await fetch(`/api/admin/users/${userId}/device-binding`, { method: 'DELETE' });
       const data = await response.json();
-      
+
       if (!response.ok) {
         setError(data.error || 'Failed to reset device');
         return;
       }
-      
+
       loadUsers();
       alert(data.message);
     } catch (err) {
@@ -306,7 +306,7 @@ function AdminDashboardContent() {
       setError('Network error while resetting device');
     }
   }
-  
+
   function startEditUser(user: User) {
     setEditingUser(user);
     setEditForm({
@@ -318,28 +318,28 @@ function AdminDashboardContent() {
       expires_at: new Date(user.expires_at).toISOString().split('T')[0],
     });
   }
-  
+
   async function handleCreateCard(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    
+
     const response = await fetch('/api/admin/cards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newCard),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       setError(data.error || 'Failed to create card');
       return;
     }
-    
+
     setNewCard({ card_id: '', video_url: '', title: '', subject: '', required_subscriptions: [] });
     loadCards();
   }
-  
+
   function startEditCard(card: Card) {
     setEditingCard(card);
     setEditCardForm({
@@ -349,53 +349,53 @@ function AdminDashboardContent() {
       required_subscriptions: card.required_subscriptions || [],
     });
   }
-  
+
   async function handleUpdateCard(e: React.FormEvent) {
     e.preventDefault();
     if (!editingCard) return;
-    
+
     setError('');
-    
+
     const response = await fetch(`/api/admin/cards/${editingCard.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editCardForm),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       setError(data.error || 'Failed to update card');
       return;
     }
-    
+
     setEditingCard(null);
     setEditCardForm({ video_url: '', title: '', subject: '', required_subscriptions: [] });
     loadCards();
   }
-  
+
   async function handleDeleteCard(card: Card) {
     if (!confirm(`Delete card "${card.card_id}"? This cannot be undone.`)) return;
-    
+
     setError('');
     const response = await fetch(`/api/admin/cards/${card.id}`, { method: 'DELETE' });
-    
+
     if (!response.ok) {
       const data = await response.json();
       setError(data.error || 'Failed to delete card');
       return;
     }
-    
+
     // Remove QR code from cache
     setCardQrCodes(prev => {
       const updated = { ...prev };
       delete updated[card.card_id];
       return updated;
     });
-    
+
     loadCards();
   }
-  
+
   async function handleLogout() {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
@@ -409,7 +409,7 @@ function AdminDashboardContent() {
       setError('Logout failed');
     }
   }
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -439,7 +439,7 @@ function AdminDashboardContent() {
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#ff8240]/20 via-[#00f99d]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#ff8240]/10 via-[#ff8240]/5 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-            
+
             {/* Main Header Content */}
             <div className="relative flex items-center justify-between mb-4">
               {/* Logo & Title */}
@@ -453,7 +453,7 @@ function AdminDashboardContent() {
                     </svg>
                   </div>
                 </div>
-                
+
                 {/* Title */}
                 <div>
                   <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
@@ -495,36 +495,33 @@ function AdminDashboardContent() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-300 ${
-                      isActive
+                    className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-300 ${isActive
                         ? 'text-white'
                         : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                    }`}
+                      }`}
                   >
                     {/* Active Background */}
                     {isActive && (
                       <div className="absolute inset-0 bg-gradient-to-r from-[#ff8240] to-[#00f99d] rounded-xl shadow-lg shadow-[#ff8240]/25"></div>
                     )}
-                    
+
                     {/* Content */}
                     <div className="relative flex items-center gap-2">
                       <svg className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} d={tab.icon} />
                       </svg>
                       <span className="hidden sm:inline">{tab.label}</span>
-                      
+
                       {/* Badge for counts */}
                       {tab.id === 'users' && users.length > 0 && (
-                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
-                        }`}>
+                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
+                          }`}>
                           {users.length}
                         </span>
                       )}
                       {tab.id === 'cards' && cards.length > 0 && (
-                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
-                        }`}>
+                        <span className={`hidden sm:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
+                          }`}>
                           {cards.length}
                         </span>
                       )}
@@ -563,7 +560,7 @@ function AdminDashboardContent() {
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1">
               {/* Animated gradient border */}
               <div className="absolute inset-0 bg-gradient-to-r from-[#ff8240] via-[#00f99d] to-pink-500 opacity-20 blur-xl"></div>
-              
+
               <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-[22px]">
                 {/* Collapsible Header */}
                 <button
@@ -595,188 +592,190 @@ function AdminDashboardContent() {
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCreateUserOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                   <div className="px-6 sm:px-8 pb-6 sm:pb-8">
                     <form onSubmit={handleCreateUser} className="space-y-6">
-                  {/* Input Fields Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                    {/* Username Field */}
-                    <div className="group">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Username
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Enter username"
-                          value={newUser.username}
-                          onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Password Field */}
-                    <div className="group">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Password
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="password"
-                          placeholder="Enter password"
-                          value={newUser.password}
-                          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Phone Field (Optional) */}
-                    <div className="group">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Phone <span className="text-slate-600">(Optional)</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="tel"
-                          placeholder="e.g. 0612345678"
-                          value={newUser.phone}
-                          onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Role Field */}
-                    <div className="group">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Role
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                        </div>
-                        <select
-                          value={newUser.role}
-                          onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                          className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
-                        >
-                          <option value="student">Student</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expiration Date Field - Only for students */}
-                    {newUser.role === 'student' && (
-                    <div className="group">
-                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Expires On
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="date"
-                          value={newUser.expires_at}
-                          onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
-                          required
-                        />
-                      </div>
-                    </div>
-                    )}
-                  </div>
-
-                  {/* Subscriptions Section */}
-                  {newUser.role === 'student' && (
-                    <div className="pt-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <label className="text-sm font-semibold text-white">Subscriptions</label>
-                        <span className="text-xs text-slate-500 ml-auto">Select access levels</span>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        {availableSubscriptions.map((sub) => {
-                          const isSelected = newUser.subscriptions.includes(sub);
-                          const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
-                            math: { gradient: 'from-[#ff8240] to-[#ff8240]', ring: 'ring-[#ff8240]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            physics: { gradient: 'from-[#00f99d] to-pink-500', ring: 'ring-[#00f99d]/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                          };
-                          const color = colors[sub] || colors.math;
-                          
-                          return (
-                            <button
-                              key={sub}
-                              type="button"
-                              onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
-                              className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                                isSelected
-                                  ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#ff8240]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
-                                  : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
-                              }`}
-                            >
-                              <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
+                      {/* Input Fields Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                        {/* Username Field */}
+                        <div className="group">
+                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            Username
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
-                              {isSelected && (
-                                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Enter username"
+                              value={newUser.username}
+                              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
+                              required
+                            />
+                          </div>
+                        </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[#ff8240]/25"
-                    >
-                      <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] px-6 py-4 transition-all group-hover:bg-opacity-0">
-                        <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span className="font-semibold text-white text-base">Create User</span>
+                        {/* Password Field */}
+                        <div className="group">
+                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            Password
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            </div>
+                            <input
+                              type="password"
+                              placeholder="Enter password"
+                              value={newUser.password}
+                              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {/* Phone Field (Optional) */}
+                        <div className="group">
+                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            Phone <span className="text-slate-600">(Optional)</span>
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                            </div>
+                            <input
+                              type="tel"
+                              placeholder="e.g. 0612345678"
+                              value={newUser.phone}
+                              onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Role Field */}
+                        <div className="group">
+                          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            Role
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <select
+                              value={newUser.role}
+                              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                              className="w-full pl-12 pr-10 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 cursor-pointer"
+                            >
+                              <option value="student">Student</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expiration Date Field - Only for students */}
+                        {newUser.role === 'student' && (
+                          <div className="group">
+                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                              Expires On
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg className="w-5 h-5 text-slate-500 group-focus-within:text-[#e9b48e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <input
+                                type="date"
+                                value={newUser.expires_at}
+                                onChange={(e) => setNewUser({ ...newUser, expires_at: e.target.value })}
+                                className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#ff8240]/50 focus:border-[#ff8240]/50 focus:bg-slate-800 transition-all duration-200 [color-scheme:dark]"
+                                required
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {/* Shine effect */}
-                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                    </button>
-                  </div>
-                </form>
+
+                      {/* Subscriptions Section */}
+                      {newUser.role === 'student' && (
+                        <div className="pt-2">
+                          <div className="flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            <label className="text-sm font-semibold text-white">Subscriptions</label>
+                            <span className="text-xs text-slate-500 ml-auto">Select access levels</span>
+                          </div>
+                          <div className="flex flex-wrap gap-3">
+                            {availableSubscriptions.map((sub) => {
+                              const isSelected = newUser.subscriptions.includes(sub);
+                              const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
+                                math: { gradient: 'from-[#ff8240] to-[#ff8240]', ring: 'ring-[#ff8240]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                                physics: { gradient: 'from-[#00f99d] to-pink-500', ring: 'ring-[#00f99d]/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                                science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                                bmath: { gradient: 'from-blue-500 to-indigo-600', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                                bphysics: { gradient: 'from-purple-500 to-violet-600', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                                bscience: { gradient: 'from-cyan-500 to-blue-500', ring: 'ring-cyan-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                              };
+                              const color = colors[sub] || colors.math;
+
+                              return (
+                                <button
+                                  key={sub}
+                                  type="button"
+                                  onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
+                                  className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${isSelected
+                                      ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#ff8240]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
+                                      : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
+                                    }`}
+                                >
+                                  <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
+                                  </svg>
+                                  <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                                  {isSelected && (
+                                    <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Submit Button */}
+                      <div className="pt-4">
+                        <button
+                          type="submit"
+                          className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[#ff8240]/25"
+                        >
+                          <div className="relative flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#ff8240] via-[#ff8240] to-[#00f99d] px-6 py-4 transition-all group-hover:bg-opacity-0">
+                            <svg className="w-5 h-5 text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span className="font-semibold text-white text-base">Create User</span>
+                          </div>
+                          {/* Shine effect */}
+                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               </div>
@@ -841,253 +840,247 @@ function AdminDashboardContent() {
                     {users
                       .filter(user => {
                         const query = userSearchQuery.toLowerCase();
-                        return user.username.toLowerCase().includes(query) || 
-                               (user.phone && user.phone.toLowerCase().includes(query));
+                        return user.username.toLowerCase().includes(query) ||
+                          (user.phone && user.phone.toLowerCase().includes(query));
                       })
                       .map((user) => {
-                  const isExpired = new Date(user.expires_at) < new Date();
-                  const isExpiringSoon = !isExpired && new Date(user.expires_at) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-                  
-                  return (
-                    <div
-                      key={user.user_id}
-                      className="group relative bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden"
-                    >
-                      {/* Card Header with gradient */}
-                      <div className={`relative h-20 ${
-                        user.role === 'admin' 
-                          ? 'bg-gradient-to-br from-violet-500 via-[#00f99d] to-indigo-600' 
-                          : 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800'
-                      }`}>
-                        {/* Pattern overlay */}
-                        <div className="absolute inset-0 opacity-10">
-                          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <defs>
-                              <pattern id={`grid-${user.user_id}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                                <circle cx="1" cy="1" r="1" fill="white"/>
-                              </pattern>
-                            </defs>
-                            <rect width="100" height="100" fill={`url(#grid-${user.user_id})`}/>
+                        const isExpired = new Date(user.expires_at) < new Date();
+                        const isExpiringSoon = !isExpired && new Date(user.expires_at) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+                        return (
+                          <div
+                            key={user.user_id}
+                            className="group relative bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden"
+                          >
+                            {/* Card Header with gradient */}
+                            <div className={`relative h-20 ${user.role === 'admin'
+                                ? 'bg-gradient-to-br from-violet-500 via-[#00f99d] to-indigo-600'
+                                : 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800'
+                              }`}>
+                              {/* Pattern overlay */}
+                              <div className="absolute inset-0 opacity-10">
+                                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                  <defs>
+                                    <pattern id={`grid-${user.user_id}`} width="10" height="10" patternUnits="userSpaceOnUse">
+                                      <circle cx="1" cy="1" r="1" fill="white" />
+                                    </pattern>
+                                  </defs>
+                                  <rect width="100" height="100" fill={`url(#grid-${user.user_id})`} />
+                                </svg>
+                              </div>
+
+                              {/* Role Badge */}
+                              <div className="absolute top-3 right-3">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full backdrop-blur-sm ${user.role === 'admin'
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-white/20 text-white'
+                                  }`}>
+                                  {user.role === 'admin' ? (
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
+                                    </svg>
+                                  )}
+                                  {user.role}
+                                </span>
+                              </div>
+
+                              {/* Avatar */}
+                              <div className="absolute -bottom-8 left-5">
+                                <div className="relative">
+                                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg border-4 border-white ${user.role === 'admin'
+                                      ? 'bg-gradient-to-br from-violet-400 to-[#00f99d] text-white'
+                                      : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600'
+                                    }`}>
+                                    {user.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  {/* Online indicator */}
+                                  <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white ${isExpired ? 'bg-red-400' : isExpiringSoon ? 'bg-amber-400' : 'bg-emerald-400'
+                                    }`}></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="pt-10 pb-4 px-5">
+                              {/* Username */}
+                              <h4 className="text-lg font-bold text-slate-900 mb-0.5">{user.username}</h4>
+
+                              {/* Phone */}
+                              {user.phone && (
+                                <p className="text-sm text-slate-500 mb-3 flex items-center gap-1.5">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  {user.phone}
+                                </p>
+                              )}
+
+                              {/* Subscriptions */}
+                              {user.role === 'student' && (
+                                <div className="mb-4">
+                                  {user.subscriptions && user.subscriptions.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {user.subscriptions.map((sub) => {
+                                        const subColors: Record<string, string> = {
+                                          math: 'bg-[#ffe8d9] text-[#e06620] ring-[#ffd4b8]',
+                                          physics: 'bg-purple-100 text-purple-700 ring-[#b3ffdb]',
+                                          science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                                        };
+                                        return (
+                                          <span
+                                            key={sub}
+                                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${subColors[sub] || 'bg-slate-100 text-slate-700 ring-slate-200'}`}
+                                          >
+                                            {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-slate-400 italic">No subscriptions</span>
+                                  )}
+                                </div>
+                              )}
+                              {user.role === 'admin' && (
+                                <p className="text-sm text-slate-500 mb-4">Full system access</p>
+                              )}
+
+                              {/* Stats Row */}
+                              <div className="flex items-center gap-4 py-3 border-t border-slate-100">
+                                <div className="flex-1">
+                                  <p className="text-xs text-slate-400 uppercase tracking-wide">Expires</p>
+                                  <p className={`text-sm font-semibold ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-slate-700'
+                                    }`}>
+                                    {new Date(user.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-slate-400 uppercase tracking-wide">Created</p>
+                                  <p className="text-sm font-semibold text-slate-700">
+                                    {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2 pt-3">
+                                <button
+                                  onClick={() => startEditUser(user)}
+                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  Edit
+                                </button>
+                                {user.role === 'student' && (
+                                  <button
+                                    onClick={() => handleForceLogout(user.user_id, user.username)}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-medium text-sm rounded-xl transition-colors"
+                                    title="Force logout this user"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteUser(user.user_id, user.username)}
+                                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm rounded-xl transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+
+                              {/* Device Binding Controls - Students Only */}
+                              {user.role === 'student' && (
+                                <div className="flex gap-2 pt-2 border-t border-slate-100 mt-2">
+                                  <button
+                                    onClick={() => handleToggleDeviceBinding(user.user_id, user.username, user.device_binding_enabled || false)}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 font-medium text-xs rounded-xl transition-colors ${user.device_binding_enabled
+                                        ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-500'
+                                      }`}
+                                    title={user.device_binding_enabled ? 'Device binding is ON - Click to disable' : 'Device binding is OFF - Click to enable'}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    {user.device_binding_enabled ? 'Device Lock ON' : 'Device Lock OFF'}
+                                  </button>
+                                  {user.device_binding_enabled && user.device_id && (
+                                    <button
+                                      onClick={() => handleResetDevice(user.user_id, user.username)}
+                                      className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 font-medium text-xs rounded-xl transition-colors"
+                                      title="Reset device - Allow login from new device"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Expired/Expiring Soon Banner */}
+                            {isExpired && (
+                              <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-xs font-bold text-center py-1">
+                                EXPIRED
+                              </div>
+                            )}
+                            {isExpiringSoon && !isExpired && (
+                              <div className="absolute top-0 left-0 right-0 bg-amber-500 text-white text-xs font-bold text-center py-1">
+                                EXPIRING SOON
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Empty State */}
+                  {users.length === 0 && (
+                    <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                      <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">No users yet</h3>
+                      <p className="text-slate-500">Create your first user using the form above</p>
+                    </div>
+                  )}
+
+                  {/* No Search Results */}
+                  {users.length > 0 && users.filter(user => {
+                    const query = userSearchQuery.toLowerCase();
+                    return user.username.toLowerCase().includes(query) ||
+                      (user.phone && user.phone.toLowerCase().includes(query));
+                  }).length === 0 && (
+                      <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                         </div>
-                        
-                        {/* Role Badge */}
-                        <div className="absolute top-3 right-3">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full backdrop-blur-sm ${
-                            user.role === 'admin' 
-                              ? 'bg-white/20 text-white' 
-                              : 'bg-white/20 text-white'
-                          }`}>
-                            {user.role === 'admin' ? (
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
-                              </svg>
-                            )}
-                            {user.role}
-                          </span>
-                        </div>
-
-                        {/* Avatar */}
-                        <div className="absolute -bottom-8 left-5">
-                          <div className="relative">
-                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg border-4 border-white ${
-                              user.role === 'admin'
-                                ? 'bg-gradient-to-br from-violet-400 to-[#00f99d] text-white'
-                                : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600'
-                            }`}>
-                              {user.username.charAt(0).toUpperCase()}
-                            </div>
-                            {/* Online indicator */}
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white ${
-                              isExpired ? 'bg-red-400' : isExpiringSoon ? 'bg-amber-400' : 'bg-emerald-400'
-                            }`}></div>
-                          </div>
-                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-1">No users found</h3>
+                        <p className="text-slate-500">No users match "{userSearchQuery}"</p>
+                        <button
+                          onClick={() => setUserSearchQuery('')}
+                          className="mt-4 px-4 py-2 text-sm font-medium text-[#ff8240] hover:text-[#e06620] hover:bg-[#fff5f0] rounded-lg transition-colors"
+                        >
+                          Clear search
+                        </button>
                       </div>
-
-                      {/* Card Body */}
-                      <div className="pt-10 pb-4 px-5">
-                        {/* Username */}
-                        <h4 className="text-lg font-bold text-slate-900 mb-0.5">{user.username}</h4>
-                        
-                        {/* Phone */}
-                        {user.phone && (
-                          <p className="text-sm text-slate-500 mb-3 flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            {user.phone}
-                          </p>
-                        )}
-                        
-                        {/* Subscriptions */}
-                        {user.role === 'student' && (
-                          <div className="mb-4">
-                            {user.subscriptions && user.subscriptions.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {user.subscriptions.map((sub) => {
-                                  const subColors: Record<string, string> = {
-                                    math: 'bg-[#ffe8d9] text-[#e06620] ring-[#ffd4b8]',
-                                    physics: 'bg-purple-100 text-purple-700 ring-[#b3ffdb]',
-                                    science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-                                  };
-                                  return (
-                                    <span 
-                                      key={sub} 
-                                      className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${subColors[sub] || 'bg-slate-100 text-slate-700 ring-slate-200'}`}
-                                    >
-                                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-400 italic">No subscriptions</span>
-                            )}
-                          </div>
-                        )}
-                        {user.role === 'admin' && (
-                          <p className="text-sm text-slate-500 mb-4">Full system access</p>
-                        )}
-
-                        {/* Stats Row */}
-                        <div className="flex items-center gap-4 py-3 border-t border-slate-100">
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-400 uppercase tracking-wide">Expires</p>
-                            <p className={`text-sm font-semibold ${
-                              isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-slate-700'
-                            }`}>
-                              {new Date(user.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-400 uppercase tracking-wide">Created</p>
-                            <p className="text-sm font-semibold text-slate-700">
-                              {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 pt-3">
-                          <button
-                            onClick={() => startEditUser(user)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </button>
-                          {user.role === 'student' && (
-                            <button
-                              onClick={() => handleForceLogout(user.user_id, user.username)}
-                              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-medium text-sm rounded-xl transition-colors"
-                              title="Force logout this user"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                              </svg>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteUser(user.user_id, user.username)}
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-sm rounded-xl transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        {/* Device Binding Controls - Students Only */}
-                        {user.role === 'student' && (
-                          <div className="flex gap-2 pt-2 border-t border-slate-100 mt-2">
-                            <button
-                              onClick={() => handleToggleDeviceBinding(user.user_id, user.username, user.device_binding_enabled || false)}
-                              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 font-medium text-xs rounded-xl transition-colors ${
-                                user.device_binding_enabled
-                                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-500'
-                              }`}
-                              title={user.device_binding_enabled ? 'Device binding is ON - Click to disable' : 'Device binding is OFF - Click to enable'}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
-                              {user.device_binding_enabled ? 'Device Lock ON' : 'Device Lock OFF'}
-                            </button>
-                            {user.device_binding_enabled && user.device_id && (
-                              <button
-                                onClick={() => handleResetDevice(user.user_id, user.username)}
-                                className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 font-medium text-xs rounded-xl transition-colors"
-                                title="Reset device - Allow login from new device"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Reset
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Expired/Expiring Soon Banner */}
-                      {isExpired && (
-                        <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-xs font-bold text-center py-1">
-                          EXPIRED
-                        </div>
-                      )}
-                      {isExpiringSoon && !isExpired && (
-                        <div className="absolute top-0 left-0 right-0 bg-amber-500 text-white text-xs font-bold text-center py-1">
-                          EXPIRING SOON
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Empty State */}
-              {users.length === 0 && (
-                <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">No users yet</h3>
-                  <p className="text-slate-500">Create your first user using the form above</p>
-                </div>
-              )}
-              
-              {/* No Search Results */}
-              {users.length > 0 && users.filter(user => {
-                const query = userSearchQuery.toLowerCase();
-                return user.username.toLowerCase().includes(query) || 
-                       (user.phone && user.phone.toLowerCase().includes(query));
-              }).length === 0 && (
-                <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">No users found</h3>
-                  <p className="text-slate-500">No users match "{userSearchQuery}"</p>
-                  <button
-                    onClick={() => setUserSearchQuery('')}
-                    className="mt-4 px-4 py-2 text-sm font-medium text-[#ff8240] hover:text-[#e06620] hover:bg-[#fff5f0] rounded-lg transition-colors"
-                  >
-                    Clear search
-                  </button>
-                </div>
-              )}
+                    )}
                 </div>
               </div>
             </div>
@@ -1103,308 +1096,314 @@ function AdminDashboardContent() {
               <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ffd4b8]/20 to-[#b3ffdb]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-orange-200/20 to-pink-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
               <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-[#ffe8d9]/10 to-[#ffd4b8]/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
-              
+
               {/* Content */}
               <div className="relative space-y-6">
-            {/* Search & Filter Bar */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm p-4 sm:p-5">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Search Input */}
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search cards by title or ID..."
-                    value={cardSearchQuery}
-                    onChange={(e) => setCardSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
-                  />
-                  {cardSearchQuery && (
+                {/* Search & Filter Bar */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Search Input */}
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search cards by title or ID..."
+                        value={cardSearchQuery}
+                        onChange={(e) => setCardSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                      />
+                      {cardSearchQuery && (
+                        <button
+                          onClick={() => setCardSearchQuery('')}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Category Filter */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setCardCategoryFilter('all')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${cardCategoryFilter === 'all'
+                            ? 'bg-slate-900 text-white shadow-lg'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                      >
+                        All
+                      </button>
+                      {availableSubscriptions.map((sub) => {
+                        const colors: Record<string, { active: string; inactive: string }> = {
+                          math: { active: 'bg-[#ff8240] text-white shadow-lg shadow-[#ff8240]/25', inactive: 'bg-[#fff5f0] text-[#ff8240] hover:bg-[#ffe8d9]' },
+                          physics: { active: 'bg-[#00f99d] text-white shadow-lg shadow-[#00f99d]/25', inactive: 'bg-[#e6fff5] text-[#00f99d] hover:bg-purple-100' },
+                          science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+                          bmath: { active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
+                          bphysics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
+                          bscience: { active: 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25', inactive: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100' },
+                        };
+                        const color = colors[sub] || colors.math;
+                        return (
+                          <button
+                            key={sub}
+                            onClick={() => setCardCategoryFilter(sub)}
+                            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${cardCategoryFilter === sub ? color.active : color.inactive
+                              }`}
+                          >
+                            {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Card Button */}
                     <button
-                      onClick={() => setCardSearchQuery('')}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+                      onClick={() => setIsCreateCardOpen(true)}
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
+                      <span className="hidden sm:inline">Add Card</span>
                     </button>
-                  )}
+                  </div>
+
+                  {/* Results count */}
+                  <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                    <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                    {cards.filter(card => {
+                      const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
+                        (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
+                      const matchesCategory = cardCategoryFilter === 'all' ||
+                        (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
+                      return matchesSearch && matchesCategory;
+                    }).length} cards found
+                  </div>
                 </div>
 
-                {/* Category Filter */}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setCardCategoryFilter('all')}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      cardCategoryFilter === 'all'
-                        ? 'bg-slate-900 text-white shadow-lg'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {availableSubscriptions.map((sub) => {
-                    const colors: Record<string, { active: string; inactive: string }> = {
-                      math: { active: 'bg-[#ff8240] text-white shadow-lg shadow-[#ff8240]/25', inactive: 'bg-[#fff5f0] text-[#ff8240] hover:bg-[#ffe8d9]' },
-                      physics: { active: 'bg-[#00f99d] text-white shadow-lg shadow-[#00f99d]/25', inactive: 'bg-[#e6fff5] text-[#00f99d] hover:bg-purple-100' },
-                      science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+                {/* Cards Grid - Modern Design */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {cards.filter(card => {
+                    const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
+                      (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
+                    const matchesCategory = cardCategoryFilter === 'all' ||
+                      (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
+                    return matchesSearch && matchesCategory;
+                  }).map((card) => {
+                    const subColors: Record<string, string> = {
+                      math: 'from-[#ff8240] to-[#ff8240]',
+                      physics: 'from-[#00f99d] to-pink-500',
+                      science: 'from-green-500 to-emerald-500',
+                      bmath: 'from-blue-500 to-indigo-600',
+                      bphysics: 'from-purple-500 to-violet-600',
+                      bscience: 'from-cyan-500 to-blue-500',
                     };
-                    const color = colors[sub] || colors.math;
+                    const primarySub = card.required_subscriptions?.[0] || 'math';
+                    const gradientColor = subColors[primarySub] || subColors.math;
+
                     return (
-                      <button
-                        key={sub}
-                        onClick={() => setCardCategoryFilter(sub)}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          cardCategoryFilter === sub ? color.active : color.inactive
-                        }`}
-                      >
-                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
+                      <div key={card.id} className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
+                        {/* Gradient Top Bar */}
+                        <div className={`h-1.5 bg-gradient-to-r ${gradientColor}`}></div>
+
+                        {/* Card Header */}
+                        <div className="p-5">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-lg bg-gradient-to-r ${gradientColor} text-white shadow-sm`}>
+                                  {card.card_id}
+                                </span>
+                              </div>
+                              <h3 className="font-semibold text-gray-900 text-lg truncate">{card.title || 'Untitled'}</h3>
+                            </div>
+
+                            {/* Action Buttons - Always visible */}
+                            <div className="flex items-center gap-1">
+                              <a
+                                href={card.video_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-[#ff8240] hover:text-[#ff8240] hover:bg-[#fff5f0] rounded-lg transition-colors"
+                                title="Watch video"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </a>
+                              <button
+                                onClick={() => startEditCard(card)}
+                                className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCard(card)}
+                                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Subscription Tags */}
+                          {card.required_subscriptions && card.required_subscriptions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {card.required_subscriptions.map((sub) => {
+                                const tagColors: Record<string, string> = {
+                                  math: 'bg-[#fff5f0] text-[#e06620] ring-[#ffd4b8]',
+                                  physics: 'bg-[#e6fff5] text-purple-700 ring-[#b3ffdb]',
+                                  science: 'bg-green-50 text-green-700 ring-green-200',
+                                  bmath: 'bg-blue-50 text-blue-700 ring-blue-200',
+                                  bphysics: 'bg-purple-50 text-purple-700 ring-purple-200',
+                                  bscience: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
+                                };
+                                return (
+                                  <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tagColors[sub] || tagColors.math}`}>
+                                    {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* QR Section */}
+                        <div className="px-5 pb-5">
+                          {loadingQr[card.card_id] ? (
+                            <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl">
+                              <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          ) : cardQrCodes[card.card_id] ? (
+                            <div className="space-y-4">
+                              {/* QR Code Display */}
+                              <div id={`qr-print-${card.card_id}`} className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+                                <div className="bg-white rounded-lg p-3 shadow-sm mx-auto w-fit">
+                                  <img
+                                    src={cardQrCodes[card.card_id]}
+                                    alt={`QR ${card.card_id}`}
+                                    className="w-36 h-36"
+                                  />
+                                </div>
+                                <p className="text-[11px] text-gray-400 text-center mt-3 font-mono truncate px-2">{getAccessUrl(card.card_id)}</p>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="grid grid-cols-4 gap-2">
+                                <button
+                                  onClick={() => {
+                                    const printContent = document.getElementById(`qr-print-${card.card_id}`);
+                                    const originalContents = document.body.innerHTML;
+                                    if (printContent) {
+                                      document.body.innerHTML = printContent.outerHTML;
+                                      window.print();
+                                      document.body.innerHTML = originalContents;
+                                      window.location.reload();
+                                    }
+                                  }}
+                                  className="flex flex-col items-center justify-center gap-1 py-2.5 bg-[#fff5f0] text-[#ff8240] text-xs font-medium rounded-xl hover:bg-[#ffe8d9] transition-colors"
+                                  title="Print QR"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                  </svg>
+                                  <span>Print</span>
+                                </button>
+                                <a
+                                  href={cardQrCodes[card.card_id]}
+                                  download={`qr-${card.card_id}.png`}
+                                  className="flex flex-col items-center justify-center gap-1 py-2.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                                  title="Download"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  <span>Save</span>
+                                </a>
+                                <button
+                                  onClick={() => copyAccessLink(card.card_id)}
+                                  className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium rounded-xl transition-all ${copiedCardId === card.card_id
+                                      ? 'bg-green-500 text-white'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                  title="Copy link"
+                                >
+                                  {copiedCardId === card.card_id ? (
+                                    <>
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      <span>Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                      </svg>
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => startEditCard(card)}
+                                  className="flex flex-col items-center justify-center gap-1 py-2.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-xl hover:bg-blue-100 transition-colors"
+                                  title="Edit"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  <span>Edit</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => loadQrCode(card.card_id)}
+                              className={`w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r ${gradientColor} text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all`}
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                              </svg>
+                              Generate QR Code
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
 
-                {/* Add Card Button */}
-                <button
-                  onClick={() => setIsCreateCardOpen(true)}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="hidden sm:inline">Add Card</span>
-                </button>
-              </div>
-
-              {/* Results count */}
-              <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                {/* Empty State */}
                 {cards.filter(card => {
                   const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
                     (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
                   const matchesCategory = cardCategoryFilter === 'all' ||
                     (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
                   return matchesSearch && matchesCategory;
-                }).length} cards found
-              </div>
-            </div>
-
-            {/* Cards Grid - Modern Design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {cards.filter(card => {
-                const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
-                  (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
-                const matchesCategory = cardCategoryFilter === 'all' ||
-                  (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
-                return matchesSearch && matchesCategory;
-              }).map((card) => {
-                const subColors: Record<string, string> = {
-                  math: 'from-[#ff8240] to-[#ff8240]',
-                  physics: 'from-[#00f99d] to-pink-500',
-                  science: 'from-green-500 to-emerald-500',
-                };
-                const primarySub = card.required_subscriptions?.[0] || 'math';
-                const gradientColor = subColors[primarySub] || subColors.math;
-                
-                return (
-                  <div key={card.id} className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
-                    {/* Gradient Top Bar */}
-                    <div className={`h-1.5 bg-gradient-to-r ${gradientColor}`}></div>
-                    
-                    {/* Card Header */}
-                    <div className="p-5">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-lg bg-gradient-to-r ${gradientColor} text-white shadow-sm`}>
-                              {card.card_id}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 text-lg truncate">{card.title || 'Untitled'}</h3>
-                        </div>
-                        
-                        {/* Action Buttons - Always visible */}
-                        <div className="flex items-center gap-1">
-                          <a
-                            href={card.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-[#ff8240] hover:text-[#ff8240] hover:bg-[#fff5f0] rounded-lg transition-colors"
-                            title="Watch video"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </a>
-                          <button
-                            onClick={() => startEditCard(card)}
-                            className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCard(card)}
-                            className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                }).length === 0 && (
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
                       </div>
-                      
-                      {/* Subscription Tags */}
-                      {card.required_subscriptions && card.required_subscriptions.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {card.required_subscriptions.map((sub) => {
-                            const tagColors: Record<string, string> = {
-                              math: 'bg-[#fff5f0] text-[#e06620] ring-[#ffd4b8]',
-                              physics: 'bg-[#e6fff5] text-purple-700 ring-[#b3ffdb]',
-                              science: 'bg-green-50 text-green-700 ring-green-200',
-                            };
-                            return (
-                              <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tagColors[sub] || tagColors.math}`}>
-                                {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">No cards found</h3>
+                      <p className="text-gray-500">Try adjusting your search or filter criteria</p>
                     </div>
-                    
-                    {/* QR Section */}
-                    <div className="px-5 pb-5">
-                      {loadingQr[card.card_id] ? (
-                        <div className="flex items-center justify-center py-12 bg-gray-50 rounded-xl">
-                          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      ) : cardQrCodes[card.card_id] ? (
-                        <div className="space-y-4">
-                          {/* QR Code Display */}
-                          <div id={`qr-print-${card.card_id}`} className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100">
-                            <div className="bg-white rounded-lg p-3 shadow-sm mx-auto w-fit">
-                              <img 
-                                src={cardQrCodes[card.card_id]} 
-                                alt={`QR ${card.card_id}`} 
-                                className="w-36 h-36"
-                              />
-                            </div>
-                            <p className="text-[11px] text-gray-400 text-center mt-3 font-mono truncate px-2">{getAccessUrl(card.card_id)}</p>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="grid grid-cols-4 gap-2">
-                            <button
-                              onClick={() => {
-                                const printContent = document.getElementById(`qr-print-${card.card_id}`);
-                                const originalContents = document.body.innerHTML;
-                                if (printContent) {
-                                  document.body.innerHTML = printContent.outerHTML;
-                                  window.print();
-                                  document.body.innerHTML = originalContents;
-                                  window.location.reload();
-                                }
-                              }}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-[#fff5f0] text-[#ff8240] text-xs font-medium rounded-xl hover:bg-[#ffe8d9] transition-colors"
-                              title="Print QR"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                              </svg>
-                              <span>Print</span>
-                            </button>
-                            <a
-                              href={cardQrCodes[card.card_id]}
-                              download={`qr-${card.card_id}.png`}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-xl hover:bg-gray-200 transition-colors"
-                              title="Download"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              <span>Save</span>
-                            </a>
-                            <button
-                              onClick={() => copyAccessLink(card.card_id)}
-                              className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium rounded-xl transition-all ${
-                                copiedCardId === card.card_id
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                              title="Copy link"
-                            >
-                              {copiedCardId === card.card_id ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                  </svg>
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => startEditCard(card)}
-                              className="flex flex-col items-center justify-center gap-1 py-2.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-xl hover:bg-blue-100 transition-colors"
-                              title="Edit"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              <span>Edit</span>
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => loadQrCode(card.card_id)}
-                          className={`w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r ${gradientColor} text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all`}
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                          </svg>
-                          Generate QR Code
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Empty State */}
-            {cards.filter(card => {
-              const matchesSearch = card.card_id.toLowerCase().includes(cardSearchQuery.toLowerCase()) ||
-                (card.title || '').toLowerCase().includes(cardSearchQuery.toLowerCase());
-              const matchesCategory = cardCategoryFilter === 'all' ||
-                (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
-              return matchesSearch && matchesCategory;
-            }).length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">No cards found</h3>
-                <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-              </div>
-            )}
+                  )}
               </div>
             </div>
           </div>
@@ -1544,16 +1543,16 @@ function AdminDashboardContent() {
                 </select>
               </div>
               {editForm.role === 'student' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
-                <input
-                  type="date"
-                  value={editForm.expires_at}
-                  onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
-                  required
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
+                  <input
+                    type="date"
+                    value={editForm.expires_at}
+                    onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240] focus:border-transparent focus:bg-white"
+                    required
+                  />
+                </div>
               )}
               {editForm.role === 'student' && (
                 <div>
@@ -1564,11 +1563,10 @@ function AdminDashboardContent() {
                         key={sub}
                         type="button"
                         onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          editForm.subscriptions.includes(sub)
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${editForm.subscriptions.includes(sub)
                             ? 'bg-[#ff8240] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         {sub.charAt(0).toUpperCase() + sub.slice(1)}
                       </button>
@@ -1602,13 +1600,13 @@ function AdminDashboardContent() {
           <div className="relative w-full max-w-2xl animate-in zoom-in-95 duration-200">
             {/* Gradient glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-pink-500 to-[#00f99d] rounded-3xl blur-lg opacity-30"></div>
-            
+
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="relative p-6 pb-0">
                 {/* Decorative gradient */}
                 <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-orange-500/20 via-pink-500/10 to-transparent"></div>
-                
+
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -1720,19 +1718,21 @@ function AdminDashboardContent() {
                           math: { gradient: 'from-[#ff8240] to-[#ff8240]', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
                           physics: { gradient: 'from-[#00f99d] to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                           science: { gradient: 'from-green-500 to-emerald-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                          bmath: { gradient: 'from-blue-500 to-indigo-600', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                          bphysics: { gradient: 'from-purple-500 to-violet-600', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                          bscience: { gradient: 'from-cyan-500 to-blue-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
                         };
                         const color = colors[sub] || colors.math;
-                        
+
                         return (
                           <button
                             key={sub}
                             type="button"
                             onClick={() => setNewCard({ ...newCard, required_subscriptions: toggleSubscription(newCard.required_subscriptions, sub) })}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                              isSelected
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${isSelected
                                 ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg`
                                 : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50`
-                            }`}
+                              }`}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
@@ -1831,11 +1831,10 @@ function AdminDashboardContent() {
                       key={sub}
                       type="button"
                       onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        editCardForm.required_subscriptions.includes(sub)
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${editCardForm.required_subscriptions.includes(sub)
                           ? 'bg-[#ff8240] text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       {sub.charAt(0).toUpperCase() + sub.slice(1)}
                     </button>
