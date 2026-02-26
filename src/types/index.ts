@@ -1,5 +1,14 @@
-// Subscription types
-export type Subscription = 'math' | 'physics' | 'science' | 'bmath' | 'bphysics' | 'bscience' | 'brevetmath' | 'brevetphysics';
+// Subscription types — now dynamic, backed by subscription_categories table
+export type Subscription = string;
+
+export interface SubscriptionCategory {
+  id: string;
+  label: string;
+  color: string;
+  hidden: boolean;
+  sort_order: number;
+  created_at: string;
+}
 
 // Card type - Maps card identifiers to YouTube video URLs
 export interface Card {

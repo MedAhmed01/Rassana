@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import type { SubscriptionCategory } from '@/types';
 
 interface UserData {
   username: string;
@@ -67,6 +68,7 @@ function HomeContent() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [continueWatching, setContinueWatching] = useState<ContinueWatchingData | null>(null);
+  const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
   
   // Video Player Modal State
   const [showPlayer, setShowPlayer] = useState(false);
@@ -285,6 +287,11 @@ function HomeContent() {
             });
             setLoading(false);
             loadContinueWatching();
+            // Load categories for dynamic label/color display
+            fetch('/api/admin/categories')
+              .then(r => r.ok ? r.json() : null)
+              .then(d => { if (d?.categories) setCategories(d.categories); })
+              .catch(() => {/* use empty fallback */});
           }
         } else {
           router.push('/login');
@@ -321,26 +328,30 @@ function HomeContent() {
     }
   }
 
-  const subscriptionColors: Record<string, { bg: string; text: string; icon: string }> = {
-    math: { bg: 'bg-[#ff8240]/10', text: 'text-[#ff8240]', icon: '📐' },
-    physics: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: '⚡' },
-    science: { bg: 'bg-[#00f99d]/10', text: 'text-[#00c97d]', icon: '🔬' },
-    bmath: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: '📐' },
-    bphysics: { bg: 'bg-purple-500/10', text: 'text-purple-600', icon: '⚡' },
-    bscience: { bg: 'bg-cyan-500/10', text: 'text-cyan-600', icon: '🔬' },
-    brevetmath: { bg: 'bg-rose-500/10', text: 'text-rose-600', icon: '📐' },
-    brevetphysics: { bg: 'bg-amber-500/10', text: 'text-amber-600', icon: '⚡' },
+  // Color bg/text classes per color key (matches admin COLOR_MAP palette)
+  const CAT_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
+    orange:  { bg: 'bg-[#ff8240]/10', text: 'text-[#ff8240]',   icon: '📐' },
+    teal:    { bg: 'bg-[#00f99d]/10', text: 'text-[#00c97d]',   icon: '⚡' },
+    green:   { bg: 'bg-green-500/10', text: 'text-green-600',   icon: '🔬' },
+    blue:    { bg: 'bg-blue-500/10',  text: 'text-blue-600',    icon: '📐' },
+    purple:  { bg: 'bg-purple-500/10',text: 'text-purple-600',  icon: '⚡' },
+    cyan:    { bg: 'bg-cyan-500/10',  text: 'text-cyan-600',    icon: '🔬' },
+    rose:    { bg: 'bg-rose-500/10',  text: 'text-rose-600',    icon: '📐' },
+    amber:   { bg: 'bg-amber-500/10', text: 'text-amber-600',   icon: '⚡' },
+    indigo:  { bg: 'bg-indigo-500/10',text: 'text-indigo-600',  icon: '📚' },
+    pink:    { bg: 'bg-pink-500/10',  text: 'text-pink-600',    icon: '📚' },
+    slate:   { bg: 'bg-slate-500/10', text: 'text-slate-400',   icon: '📚' },
   };
-  const subscriptionLabels: Record<string, string> = {
-    math: 'Math',
-    physics: 'Physics',
-    science: 'Sciences',
-    bmath: 'B Math',
-    bphysics: 'B Physique',
-    bscience: 'B Sciences',
-    brevetmath: 'Brevet Math',
-    brevetphysics: 'Brevet Physique',
-  };
+  const DEFAULT_CAT_COLOR = { bg: 'bg-slate-500/10', text: 'text-slate-400', icon: '📚' };
+
+  // Build label/color maps from loaded categories (or fall back to id as label)
+  const subscriptionLabels: Record<string, string> = Object.fromEntries(
+    categories.map(c => [c.id, c.label])
+  );
+  function getSubColors(sub: string) {
+    const colorKey = categories.find(c => c.id === sub)?.color || 'slate';
+    return CAT_COLORS[colorKey] || DEFAULT_CAT_COLOR;
+  }
 
   const isExpired = user?.expires_at ? new Date(user.expires_at) < new Date() : false;
   const daysLeft = user?.expires_at ? Math.ceil((new Date(user.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
@@ -399,7 +410,7 @@ function HomeContent() {
                 {user?.subscriptions && user.subscriptions.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {user.subscriptions.map((sub) => {
-                      const colors = subscriptionColors[sub.toLowerCase()] || { bg: 'bg-gray-500/10', text: 'text-gray-400', icon: '📚' };
+                      const colors = getSubColors(sub.toLowerCase());
                       return (
                         <div key={sub} className={`${colors.bg} ${colors.text} px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2`}>
                           <span>{colors.icon}</span>

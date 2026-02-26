@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { RassaLMSTab } from './components/RassaLMSTab';
+import type { SubscriptionCategory } from '@/types';
 
 interface User {
   id: string;
@@ -38,7 +39,7 @@ interface AccessLog {
 
 function AdminDashboardContent() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs' | 'lms'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs' | 'lms' | 'settings'>('users');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -67,17 +68,32 @@ function AdminDashboardContent() {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
 
-  const availableSubscriptions = ['math', 'physics', 'science', 'bmath', 'bphysics', 'bscience', 'brevetmath', 'brevetphysics'];
-  const subscriptionLabels: Record<string, string> = {
-    math: 'Math',
-    physics: 'Physics',
-    science: 'Sciences',
-    bmath: 'B Math',
-    bphysics: 'B Physique',
-    bscience: 'B Sciences',
-    brevetmath: 'Brevet Math',
-    brevetphysics: 'Brevet Physique',
+  const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
+  const [newCategory, setNewCategory] = useState({ label: '', color: 'slate' });
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<string | null>(null);
+
+  const availableSubscriptions = categories.filter(c => !c.hidden).map(c => c.id);
+  const subscriptionLabels: Record<string, string> = Object.fromEntries(
+    categories.map(c => [c.id, c.label])
+  );
+
+  const COLOR_MAP: Record<string, { gradient: string; ring: string; active: string; inactive: string; tagBg: string; tagText: string; tagRing: string; swatch: string }> = {
+    orange: { gradient: 'from-[#ff8240] to-[#ff8240]', ring: 'ring-[#ff8240]/30', active: 'bg-[#ff8240] text-white shadow-lg shadow-[#ff8240]/25', inactive: 'bg-[#fff5f0] text-[#ff8240] hover:bg-[#ffe8d9]', tagBg: 'bg-[#fff5f0]', tagText: 'text-[#e06620]', tagRing: 'ring-[#ffd4b8]', swatch: 'bg-[#ff8240]' },
+    teal:   { gradient: 'from-[#00f99d] to-pink-500', ring: 'ring-[#00f99d]/30', active: 'bg-[#00f99d] text-white shadow-lg shadow-[#00f99d]/25', inactive: 'bg-[#e6fff5] text-[#00c97d] hover:bg-[#ccfff0]', tagBg: 'bg-[#e6fff5]', tagText: 'text-[#00c97d]', tagRing: 'ring-[#b3ffdb]', swatch: 'bg-[#00f99d]' },
+    green:  { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100', tagBg: 'bg-green-50', tagText: 'text-green-700', tagRing: 'ring-green-200', swatch: 'bg-green-500' },
+    blue:   { gradient: 'from-blue-500 to-indigo-600', ring: 'ring-blue-500/30', active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100', tagBg: 'bg-blue-50', tagText: 'text-blue-700', tagRing: 'ring-blue-200', swatch: 'bg-blue-500' },
+    purple: { gradient: 'from-purple-500 to-violet-600', ring: 'ring-purple-500/30', active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100', tagBg: 'bg-purple-50', tagText: 'text-purple-700', tagRing: 'ring-purple-200', swatch: 'bg-purple-500' },
+    cyan:   { gradient: 'from-cyan-500 to-blue-500', ring: 'ring-cyan-500/30', active: 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25', inactive: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100', tagBg: 'bg-cyan-50', tagText: 'text-cyan-700', tagRing: 'ring-cyan-200', swatch: 'bg-cyan-500' },
+    rose:   { gradient: 'from-rose-500 to-red-600', ring: 'ring-rose-500/30', active: 'bg-rose-500 text-white shadow-lg shadow-rose-500/25', inactive: 'bg-rose-50 text-rose-600 hover:bg-rose-100', tagBg: 'bg-rose-50', tagText: 'text-rose-700', tagRing: 'ring-rose-200', swatch: 'bg-rose-500' },
+    amber:  { gradient: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/30', active: 'bg-amber-500 text-white shadow-lg shadow-amber-500/25', inactive: 'bg-amber-50 text-amber-600 hover:bg-amber-100', tagBg: 'bg-amber-50', tagText: 'text-amber-700', tagRing: 'ring-amber-200', swatch: 'bg-amber-500' },
+    indigo: { gradient: 'from-indigo-500 to-violet-600', ring: 'ring-indigo-500/30', active: 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25', inactive: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100', tagBg: 'bg-indigo-50', tagText: 'text-indigo-700', tagRing: 'ring-indigo-200', swatch: 'bg-indigo-500' },
+    pink:   { gradient: 'from-pink-500 to-rose-500', ring: 'ring-pink-500/30', active: 'bg-pink-500 text-white shadow-lg shadow-pink-500/25', inactive: 'bg-pink-50 text-pink-600 hover:bg-pink-100', tagBg: 'bg-pink-50', tagText: 'text-pink-700', tagRing: 'ring-pink-200', swatch: 'bg-pink-500' },
+    slate:  { gradient: 'from-slate-500 to-slate-600', ring: 'ring-slate-500/30', active: 'bg-slate-500 text-white shadow-lg shadow-slate-500/25', inactive: 'bg-slate-50 text-slate-600 hover:bg-slate-100', tagBg: 'bg-slate-50', tagText: 'text-slate-700', tagRing: 'ring-slate-200', swatch: 'bg-slate-500' },
   };
+
+  function getCategoryColors(colorKey: string) {
+    return COLOR_MAP[colorKey] || COLOR_MAP.slate;
+  }
 
   useEffect(() => {
     setUserCurrentPage(1);
@@ -117,6 +133,7 @@ function AdminDashboardContent() {
       loadUsers();
       loadCards();
       loadLogs();
+      loadCategories();
     } catch (err) {
       router.push('/login');
     }
@@ -135,6 +152,14 @@ function AdminDashboardContent() {
     if (response.ok) {
       const data = await response.json();
       setCards(data.cards || []);
+    }
+  }
+
+  async function loadCategories() {
+    const response = await fetch('/api/admin/categories');
+    if (response.ok) {
+      const data = await response.json();
+      setCategories(data.categories || []);
     }
   }
 
@@ -443,6 +468,7 @@ function AdminDashboardContent() {
     { id: 'cards' as const, label: 'Cards', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
     { id: 'logs' as const, label: 'Logs', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
     { id: 'lms' as const, label: 'Rassa LMS', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+    { id: 'settings' as const, label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
   ];
 
   const filteredUsers = users.filter(user => {
@@ -753,17 +779,8 @@ function AdminDashboardContent() {
                           <div className="flex flex-wrap gap-3">
                             {availableSubscriptions.map((sub) => {
                               const isSelected = newUser.subscriptions.includes(sub);
-                              const colors: Record<string, { gradient: string; ring: string; icon: string }> = {
-                                math: { gradient: 'from-[#ff8240] to-[#ff8240]', ring: 'ring-[#ff8240]/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                                physics: { gradient: 'from-[#00f99d] to-pink-500', ring: 'ring-[#00f99d]/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                                science: { gradient: 'from-green-500 to-emerald-500', ring: 'ring-green-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                                bmath: { gradient: 'from-blue-500 to-indigo-600', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                                bphysics: { gradient: 'from-purple-500 to-violet-600', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                                bscience: { gradient: 'from-cyan-500 to-blue-500', ring: 'ring-cyan-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                                brevetmath: { gradient: 'from-rose-500 to-red-600', ring: 'ring-rose-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                                brevetphysics: { gradient: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                              };
-                              const color = colors[sub] || colors.math;
+                              const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                              const color = getCategoryColors(catColor);
 
                               return (
                                 <button
@@ -771,13 +788,11 @@ function AdminDashboardContent() {
                                   type="button"
                                   onClick={() => setNewUser({ ...newUser, subscriptions: toggleSubscription(newUser.subscriptions, sub) })}
                                   className={`relative group flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${isSelected
-                                    ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg shadow-${sub === 'math' ? '[#ff8240]' : sub === 'physics' ? 'purple' : 'green'}-500/25 scale-[1.02]`
+                                    ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg scale-[1.02]`
                                     : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50 hover:ring-slate-600`
                                     }`}
                                 >
-                                  <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
-                                  </svg>
+                                  <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white/80' : color.swatch}`}></span>
                                   <span>{subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
                                   {isSelected && (
                                     <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
@@ -960,20 +975,12 @@ function AdminDashboardContent() {
                                   {user.subscriptions && user.subscriptions.length > 0 ? (
                                     <div className="flex flex-wrap gap-1.5">
                                       {user.subscriptions.map((sub) => {
-                                        const subColors: Record<string, string> = {
-                                          math: 'bg-[#ffe8d9] text-[#e06620] ring-[#ffd4b8]',
-                                          physics: 'bg-purple-100 text-purple-700 ring-[#b3ffdb]',
-                                          science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-                                          bmath: 'bg-blue-100 text-blue-700 ring-blue-200',
-                                          bphysics: 'bg-purple-100 text-purple-700 ring-purple-200',
-                                          bscience: 'bg-cyan-100 text-cyan-700 ring-cyan-200',
-                                          brevetmath: 'bg-rose-100 text-rose-700 ring-rose-200',
-                                          brevetphysics: 'bg-amber-100 text-amber-700 ring-amber-200',
-                                        };
+                                        const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                                        const colors = getCategoryColors(catColor);
                                         return (
                                           <span
                                             key={sub}
-                                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${subColors[sub] || 'bg-slate-100 text-slate-700 ring-slate-200'}`}
+                                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${colors.tagBg} ${colors.tagText} ${colors.tagRing}`}
                                           >
                                             {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                                           </span>
@@ -1232,23 +1239,13 @@ function AdminDashboardContent() {
                           All
                         </button>
                         {availableSubscriptions.map((sub) => {
-                          const colors: Record<string, { active: string; inactive: string }> = {
-                            math: { active: 'bg-[#ff8240] text-white shadow-lg shadow-[#ff8240]/25', inactive: 'bg-[#fff5f0] text-[#ff8240] hover:bg-[#ffe8d9]' },
-                            physics: { active: 'bg-[#00f99d] text-white shadow-lg shadow-[#00f99d]/25', inactive: 'bg-[#e6fff5] text-[#00f99d] hover:bg-purple-100' },
-                            science: { active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
-                            bmath: { active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-                            bphysics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
-                            bscience: { active: 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25', inactive: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100' },
-                            brevetmath: { active: 'bg-rose-500 text-white shadow-lg shadow-rose-500/25', inactive: 'bg-rose-50 text-rose-600 hover:bg-rose-100' },
-                            brevetphysics: { active: 'bg-amber-500 text-white shadow-lg shadow-amber-500/25', inactive: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
-                          };
-                          const color = colors[sub] || colors.math;
+                          const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                          const color = getCategoryColors(catColor);
                           return (
                             <button
                               key={sub}
                               onClick={() => setCardCategoryFilter(sub)}
-                              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${cardCategoryFilter === sub ? color.active : color.inactive
-                                }`}
+                              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${cardCategoryFilter === sub ? color.active : color.inactive}`}
                             >
                               {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                             </button>
@@ -1290,18 +1287,9 @@ function AdminDashboardContent() {
                         (card.required_subscriptions && card.required_subscriptions.includes(cardCategoryFilter));
                       return matchesSearch && matchesCategory;
                     }).map((card) => {
-                      const subColors: Record<string, string> = {
-                        math: 'from-[#ff8240] to-[#ff8240]',
-                        physics: 'from-[#00f99d] to-pink-500',
-                        science: 'from-green-500 to-emerald-500',
-                        bmath: 'from-blue-500 to-indigo-600',
-                        bphysics: 'from-purple-500 to-violet-600',
-                        bscience: 'from-cyan-500 to-blue-500',
-                        brevetmath: 'from-rose-500 to-red-600',
-                        brevetphysics: 'from-amber-500 to-orange-600',
-                      };
-                      const primarySub = card.required_subscriptions?.[0] || 'math';
-                      const gradientColor = subColors[primarySub] || subColors.math;
+                      const primarySub = card.required_subscriptions?.[0];
+                      const primaryCatColor = primarySub ? (categories.find(c => c.id === primarySub)?.color || 'slate') : 'orange';
+                      const gradientColor = getCategoryColors(primaryCatColor).gradient;
 
                       return (
                         <div key={card.id} className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1">
@@ -1359,18 +1347,10 @@ function AdminDashboardContent() {
                             {card.required_subscriptions && card.required_subscriptions.length > 0 && (
                               <div className="flex flex-wrap gap-1.5">
                                 {card.required_subscriptions.map((sub) => {
-                                  const tagColors: Record<string, string> = {
-                                    math: 'bg-[#fff5f0] text-[#e06620] ring-[#ffd4b8]',
-                                    physics: 'bg-[#e6fff5] text-purple-700 ring-[#b3ffdb]',
-                                    science: 'bg-green-50 text-green-700 ring-green-200',
-                                    bmath: 'bg-blue-50 text-blue-700 ring-blue-200',
-                                    bphysics: 'bg-purple-50 text-purple-700 ring-purple-200',
-                                    bscience: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
-                                    brevetmath: 'bg-rose-50 text-rose-700 ring-rose-200',
-                                    brevetphysics: 'bg-amber-50 text-amber-700 ring-amber-200',
-                                  };
+                                  const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                                  const tc = getCategoryColors(catColor);
                                   return (
-                                    <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tagColors[sub] || tagColors.math}`}>
+                                    <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tc.tagBg} ${tc.tagText} ${tc.tagRing}`}>
                                       {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                                     </span>
                                   );
@@ -1587,6 +1567,176 @@ function AdminDashboardContent() {
 
         {/* Rassa LMS Tab */}
         {activeTab === 'lms' && <RassaLMSTab />}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
+              <p className="text-slate-500 text-sm mt-1">Manage subscription categories and system configuration</p>
+            </div>
+
+            {/* Subscription Categories Section */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900">Subscription Categories</h3>
+                <p className="text-sm text-slate-500 mt-0.5">Control which categories appear in user and card selectors</p>
+              </div>
+
+              {/* Category List */}
+              <div className="divide-y divide-slate-100">
+                {categories.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-slate-400 text-sm">No categories found. Add one below.</div>
+                ) : (
+                  categories.map((cat) => {
+                    const colors = getCategoryColors(cat.color);
+                    return (
+                      <div key={cat.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
+                        {/* Color swatch */}
+                        <span className={`w-3 h-3 rounded-full flex-shrink-0 ${colors.swatch}`}></span>
+
+                        {/* Label & ID */}
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-slate-900">{cat.label}</span>
+                          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-slate-500 rounded">{cat.id}</span>
+                          {cat.hidden && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-200 rounded-full">Hidden</span>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Eye toggle */}
+                          <button
+                            onClick={async () => {
+                              await fetch(`/api/admin/categories/${cat.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ hidden: !cat.hidden }),
+                              });
+                              loadCategories();
+                            }}
+                            title={cat.hidden ? 'Show category' : 'Hide category'}
+                            className={`p-2 rounded-lg transition-colors ${cat.hidden
+                              ? 'text-amber-500 hover:bg-amber-50'
+                              : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                              }`}
+                          >
+                            {cat.hidden ? (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            )}
+                          </button>
+
+                          {/* Delete button with inline confirmation */}
+                          {confirmDeleteCategory === cat.id ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-red-600 font-medium">Confirm?</span>
+                              <button
+                                onClick={async () => {
+                                  await fetch(`/api/admin/categories/${cat.id}`, { method: 'DELETE' });
+                                  setConfirmDeleteCategory(null);
+                                  loadCategories();
+                                }}
+                                className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteCategory(null)}
+                                className="px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteCategory(cat.id)}
+                              title="Delete category"
+                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Add Category */}
+              <div className="px-6 py-5 bg-slate-50 border-t border-slate-100">
+                <p className="text-sm font-medium text-slate-700 mb-3">Add Category</p>
+                <div className="flex flex-wrap gap-3 items-end">
+                  {/* Label input */}
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="block text-xs text-slate-500 mb-1">Label</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Chemistry"
+                      value={newCategory.label}
+                      onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8240]/40 focus:border-[#ff8240]/50"
+                    />
+                    {newCategory.label && (
+                      <p className="text-xs text-slate-400 mt-1">ID: <span className="font-mono">{newCategory.label.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}</span></p>
+                    )}
+                  </div>
+
+                  {/* Color picker */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Color</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(COLOR_MAP).map(([key, val]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setNewCategory({ ...newCategory, color: key })}
+                          title={key}
+                          className={`w-6 h-6 rounded-full ${val.swatch} transition-all ${newCategory.color === key ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : 'opacity-70 hover:opacity-100'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Add button */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newCategory.label.trim()) return;
+                      const id = newCategory.label.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+                      if (!id) return;
+                      await fetch('/api/admin/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, label: newCategory.label.trim(), color: newCategory.color }),
+                      });
+                      setNewCategory({ label: '', color: 'slate' });
+                      loadCategories();
+                    }}
+                    disabled={!newCategory.label.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#ff8240] to-[#00f99d] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-[#ff8240]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main >
 
       {/* Edit User Modal */}
@@ -1660,19 +1810,25 @@ function AdminDashboardContent() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Subscriptions</label>
                     <div className="flex flex-wrap gap-2">
-                      {availableSubscriptions.map((sub) => (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${editForm.subscriptions.includes(sub)
-                            ? 'bg-[#ff8240] text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
-                        </button>
-                      ))}
+                      {availableSubscriptions.map((sub) => {
+                        const isSelected = editForm.subscriptions.includes(sub);
+                        const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                        const color = getCategoryColors(catColor);
+                        return (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setEditForm({ ...editForm, subscriptions: toggleSubscription(editForm.subscriptions, sub) })}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected
+                              ? `bg-gradient-to-r ${color.gradient} text-white`
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white/80' : color.swatch}`}></span>
+                            {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1818,17 +1974,8 @@ function AdminDashboardContent() {
                       <div className="flex flex-wrap gap-2">
                         {availableSubscriptions.map((sub) => {
                           const isSelected = newCard.required_subscriptions.includes(sub);
-                          const colors: Record<string, { gradient: string; icon: string }> = {
-                            math: { gradient: 'from-[#ff8240] to-[#ff8240]', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            physics: { gradient: 'from-[#00f99d] to-pink-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            science: { gradient: 'from-green-500 to-emerald-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                            bmath: { gradient: 'from-blue-500 to-indigo-600', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            bphysics: { gradient: 'from-purple-500 to-violet-600', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            bscience: { gradient: 'from-cyan-500 to-blue-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
-                            brevetmath: { gradient: 'from-rose-500 to-red-600', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                            brevetphysics: { gradient: 'from-amber-500 to-orange-600', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                          };
-                          const color = colors[sub] || colors.math;
+                          const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                          const color = getCategoryColors(catColor);
 
                           return (
                             <button
@@ -1840,9 +1987,7 @@ function AdminDashboardContent() {
                                 : `bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 ring-1 ring-slate-700/50`
                                 }`}
                             >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
-                              </svg>
+                              <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white/80' : color.swatch}`}></span>
                               <span>{subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
                               {isSelected && (
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -1934,19 +2079,25 @@ function AdminDashboardContent() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Required Subscriptions</label>
                   <div className="flex flex-wrap gap-2">
-                    {availableSubscriptions.map((sub) => (
-                      <button
-                        key={sub}
-                        type="button"
-                        onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${editCardForm.required_subscriptions.includes(sub)
-                          ? 'bg-[#ff8240] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                      >
-                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
-                    ))}
+                    {availableSubscriptions.map((sub) => {
+                      const isSelected = editCardForm.required_subscriptions.includes(sub);
+                      const catColor = categories.find(c => c.id === sub)?.color || 'slate';
+                      const color = getCategoryColors(catColor);
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setEditCardForm({ ...editCardForm, required_subscriptions: toggleSubscription(editCardForm.required_subscriptions, sub) })}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected
+                            ? `bg-gradient-to-r ${color.gradient} text-white`
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white/80' : color.swatch}`}></span>
+                          {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
+                        </button>
+                      );
+                    })}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Leave empty to allow all students</p>
                 </div>
