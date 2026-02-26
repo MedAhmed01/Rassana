@@ -1,5 +1,5 @@
 // Subscription types
-export type Subscription = 'math' | 'physics' | 'science' | 'bmath' | 'bphysics' | 'bscience';
+export type Subscription = 'math' | 'physics' | 'science' | 'bmath' | 'bphysics' | 'bscience' | 'brevetmath' | 'brevetphysics';
 
 // Card type - Maps card identifiers to YouTube video URLs
 export interface Card {

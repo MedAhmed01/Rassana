@@ -325,6 +325,21 @@ function HomeContent() {
     math: { bg: 'bg-[#ff8240]/10', text: 'text-[#ff8240]', icon: '📐' },
     physics: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: '⚡' },
     science: { bg: 'bg-[#00f99d]/10', text: 'text-[#00c97d]', icon: '🔬' },
+    bmath: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: '📐' },
+    bphysics: { bg: 'bg-purple-500/10', text: 'text-purple-600', icon: '⚡' },
+    bscience: { bg: 'bg-cyan-500/10', text: 'text-cyan-600', icon: '🔬' },
+    brevetmath: { bg: 'bg-rose-500/10', text: 'text-rose-600', icon: '📐' },
+    brevetphysics: { bg: 'bg-amber-500/10', text: 'text-amber-600', icon: '⚡' },
+  };
+  const subscriptionLabels: Record<string, string> = {
+    math: 'Math',
+    physics: 'Physics',
+    science: 'Sciences',
+    bmath: 'B Math',
+    bphysics: 'B Physique',
+    bscience: 'B Sciences',
+    brevetmath: 'Brevet Math',
+    brevetphysics: 'Brevet Physique',
   };
 
   const isExpired = user?.expires_at ? new Date(user.expires_at) < new Date() : false;
@@ -388,7 +403,7 @@ function HomeContent() {
                       return (
                         <div key={sub} className={`${colors.bg} ${colors.text} px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2`}>
                           <span>{colors.icon}</span>
-                          <span className="capitalize">{sub}</span>
+                          <span>{subscriptionLabels[sub.toLowerCase()] || sub}</span>
                         </div>
                       );
                     })}

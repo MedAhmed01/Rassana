@@ -67,7 +67,17 @@ function AdminDashboardContent() {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [logFilters, setLogFilters] = useState({ userId: '', cardId: '', startDate: '', endDate: '' });
 
-  const availableSubscriptions = ['math', 'physics', 'science', 'bmath', 'bphysics', 'bscience'];
+  const availableSubscriptions = ['math', 'physics', 'science', 'bmath', 'bphysics', 'bscience', 'brevetmath', 'brevetphysics'];
+  const subscriptionLabels: Record<string, string> = {
+    math: 'Math',
+    physics: 'Physics',
+    science: 'Sciences',
+    bmath: 'B Math',
+    bphysics: 'B Physique',
+    bscience: 'B Sciences',
+    brevetmath: 'Brevet Math',
+    brevetphysics: 'Brevet Physique',
+  };
 
   useEffect(() => {
     setUserCurrentPage(1);
@@ -750,6 +760,8 @@ function AdminDashboardContent() {
                                 bmath: { gradient: 'from-blue-500 to-indigo-600', ring: 'ring-blue-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
                                 bphysics: { gradient: 'from-purple-500 to-violet-600', ring: 'ring-purple-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                                 bscience: { gradient: 'from-cyan-500 to-blue-500', ring: 'ring-cyan-500/30', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                                brevetmath: { gradient: 'from-rose-500 to-red-600', ring: 'ring-rose-500/30', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                                brevetphysics: { gradient: 'from-amber-500 to-orange-600', ring: 'ring-amber-500/30', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                               };
                               const color = colors[sub] || colors.math;
 
@@ -766,7 +778,7 @@ function AdminDashboardContent() {
                                   <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
                                   </svg>
-                                  <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                                  <span>{subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
                                   {isSelected && (
                                     <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -952,13 +964,18 @@ function AdminDashboardContent() {
                                           math: 'bg-[#ffe8d9] text-[#e06620] ring-[#ffd4b8]',
                                           physics: 'bg-purple-100 text-purple-700 ring-[#b3ffdb]',
                                           science: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                                          bmath: 'bg-blue-100 text-blue-700 ring-blue-200',
+                                          bphysics: 'bg-purple-100 text-purple-700 ring-purple-200',
+                                          bscience: 'bg-cyan-100 text-cyan-700 ring-cyan-200',
+                                          brevetmath: 'bg-rose-100 text-rose-700 ring-rose-200',
+                                          brevetphysics: 'bg-amber-100 text-amber-700 ring-amber-200',
                                         };
                                         return (
                                           <span
                                             key={sub}
                                             className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md ring-1 ${subColors[sub] || 'bg-slate-100 text-slate-700 ring-slate-200'}`}
                                           >
-                                            {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                                            {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                                           </span>
                                         );
                                       })}
@@ -1222,6 +1239,8 @@ function AdminDashboardContent() {
                             bmath: { active: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25', inactive: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
                             bphysics: { active: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25', inactive: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
                             bscience: { active: 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25', inactive: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100' },
+                            brevetmath: { active: 'bg-rose-500 text-white shadow-lg shadow-rose-500/25', inactive: 'bg-rose-50 text-rose-600 hover:bg-rose-100' },
+                            brevetphysics: { active: 'bg-amber-500 text-white shadow-lg shadow-amber-500/25', inactive: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
                           };
                           const color = colors[sub] || colors.math;
                           return (
@@ -1231,7 +1250,7 @@ function AdminDashboardContent() {
                               className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${cardCategoryFilter === sub ? color.active : color.inactive
                                 }`}
                             >
-                              {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                              {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                             </button>
                           );
                         })}
@@ -1278,6 +1297,8 @@ function AdminDashboardContent() {
                         bmath: 'from-blue-500 to-indigo-600',
                         bphysics: 'from-purple-500 to-violet-600',
                         bscience: 'from-cyan-500 to-blue-500',
+                        brevetmath: 'from-rose-500 to-red-600',
+                        brevetphysics: 'from-amber-500 to-orange-600',
                       };
                       const primarySub = card.required_subscriptions?.[0] || 'math';
                       const gradientColor = subColors[primarySub] || subColors.math;
@@ -1345,10 +1366,12 @@ function AdminDashboardContent() {
                                     bmath: 'bg-blue-50 text-blue-700 ring-blue-200',
                                     bphysics: 'bg-purple-50 text-purple-700 ring-purple-200',
                                     bscience: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
+                                    brevetmath: 'bg-rose-50 text-rose-700 ring-rose-200',
+                                    brevetphysics: 'bg-amber-50 text-amber-700 ring-amber-200',
                                   };
                                   return (
                                     <span key={sub} className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ring-1 ${tagColors[sub] || tagColors.math}`}>
-                                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                                      {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                                     </span>
                                   );
                                 })}
@@ -1647,7 +1670,7 @@ function AdminDashboardContent() {
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                          {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                          {subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}
                         </button>
                       ))}
                     </div>
@@ -1802,6 +1825,8 @@ function AdminDashboardContent() {
                             bmath: { gradient: 'from-blue-500 to-indigo-600', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
                             bphysics: { gradient: 'from-purple-500 to-violet-600', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                             bscience: { gradient: 'from-cyan-500 to-blue-500', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+                            brevetmath: { gradient: 'from-rose-500 to-red-600', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+                            brevetphysics: { gradient: 'from-amber-500 to-orange-600', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                           };
                           const color = colors[sub] || colors.math;
 
@@ -1818,7 +1843,7 @@ function AdminDashboardContent() {
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={color.icon} />
                               </svg>
-                              <span>{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+                              <span>{subscriptionLabels[sub] || sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
                               {isSelected && (
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
