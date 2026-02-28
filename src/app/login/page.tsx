@@ -161,10 +161,6 @@ function LoginForm() {
     e.preventDefault();
     doLogin(false);
   };
-
-  const handleForceLogin = () => {
-    doLogin(true);
-  };
   
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -262,36 +258,16 @@ function LoginForm() {
 
                 {/* Multi-device conflict */}
                 {multiDeviceConflict && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3 animate-in slide-in-from-top duration-300">
-                    <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-amber-300">Already connected from another device</p>
-                        <p className="text-xs text-amber-300/70 mt-0.5">Your account is active on another device. You can disconnect it and login here, or ask your administrator to do it.</p>
-                      </div>
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3 animate-in slide-in-from-top duration-300">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleForceLogin}
-                      disabled={loading}
-                      className="w-full py-2.5 px-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {loading ? (
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                      )}
-                      Disconnect other device and login here
-                    </button>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-300">Already connected from another device</p>
+                      <p className="text-xs text-amber-300/70 mt-1">Your account is currently active on another device. Please contact your administrator to disconnect you.</p>
+                    </div>
                   </div>
                 )}
 

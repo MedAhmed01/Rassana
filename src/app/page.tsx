@@ -539,23 +539,6 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="w-full bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 rounded-2xl p-4 flex items-center justify-center gap-3 transition-all duration-300 group"
-            >
-              {loggingOut ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-5 h-5 text-white/60 group-hover:text-red-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              )}
-              <span className="text-white/60 group-hover:text-red-400 font-medium transition-colors">
-                {loggingOut ? 'Signing out...' : 'Sign out'}
-              </span>
-            </button>
           </div>
         </main>
 
