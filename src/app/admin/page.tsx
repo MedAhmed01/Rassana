@@ -220,7 +220,13 @@ function AdminDashboardContent() {
         body: JSON.stringify({ mode }),
       });
       if (response.ok) {
+        const data = await response.json();
         setGlobalBindingMode(mode);
+        // If switching to 'all', refresh the session list so terminated
+        // multi-device sessions disappear immediately from the UI.
+        if (mode === 'all' && data.terminatedCount > 0) {
+          loadDevicesTab();
+        }
       }
     } finally {
       setBindingModeLoading(false);
@@ -1727,7 +1733,7 @@ function AdminDashboardContent() {
                       </div>
                       {globalBindingMode === 'all' && (
                         <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-                          All students are restricted to one device. New logins will terminate other active sessions.
+                          All students are restricted to one device. Existing duplicate sessions were terminated immediately. New logins will also enforce single-device.
                         </p>
                       )}
                       {globalBindingMode === 'off' && (
