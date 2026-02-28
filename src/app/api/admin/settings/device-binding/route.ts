@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const { error } = await adminClient
     .from('system_settings')
     .upsert(
-      { key: 'device_binding_mode', value: JSON.stringify(mode), updated_at: new Date().toISOString() },
+      { key: 'device_binding_mode', value: mode, updated_at: new Date().toISOString() },
       { onConflict: 'key' }
     );
 

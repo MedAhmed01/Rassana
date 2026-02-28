@@ -34,7 +34,9 @@ async function getDeviceBindingMode(adminClient: ReturnType<typeof createAdminCl
       .select('value')
       .eq('key', 'device_binding_mode')
       .single();
-    return (data?.value as string) || 'per_user';
+    // Strip surrounding quotes in case the value was stored with JSON.stringify
+    const raw = (data?.value as string) || 'per_user';
+    return raw.replace(/^"|"$/g, '') || 'per_user';
   } catch {
     return 'per_user';
   }

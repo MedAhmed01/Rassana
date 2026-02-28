@@ -132,14 +132,17 @@ function AdminDashboardContent() {
     checkAuth();
   }, []);
 
-  // Auto-load QR codes for all cards when cards are loaded
+  // Lazy-load QR codes only when the Cards tab is active.
+  // Avoids flooding the network with 25+ requests on initial mount
+  // when the user may be on a different tab (e.g. Devices).
   useEffect(() => {
+    if (activeTab !== 'cards') return;
     cards.forEach(card => {
       if (!cardQrCodes[card.card_id] && !loadingQr[card.card_id]) {
         loadQrCode(card.card_id);
       }
     });
-  }, [cards]);
+  }, [cards, activeTab]);
 
   // Load devices data when switching to devices tab
   useEffect(() => {

@@ -23,7 +23,9 @@ export async function GET() {
       .single(),
   ]);
 
-  const bindingMode = (settingResult.data?.value as string) || 'per_user';
+  // Strip surrounding quotes in case old rows were stored with JSON.stringify
+  const rawMode = (settingResult.data?.value as string) || 'per_user';
+  const bindingMode = rawMode.replace(/^"|"$/g, '') || 'per_user';
 
   const sessions = sessionsResult.data || [];
 
