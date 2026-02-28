@@ -89,6 +89,7 @@ function AdminDashboardContent() {
   // Devices tab state
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [devicesInitialLoading, setDevicesInitialLoading] = useState(true);
   const [globalBindingMode, setGlobalBindingMode] = useState<'off' | 'per_user' | 'all'>('per_user');
   const [bindingModeLoading, setBindingModeLoading] = useState(false);
   const [deviceFilter, setDeviceFilter] = useState<'all' | 'multi'>('all');
@@ -143,8 +144,8 @@ function AdminDashboardContent() {
   // Load devices data when switching to devices tab
   useEffect(() => {
     if (activeTab === 'devices') {
-      loadActiveSessions();
-      loadGlobalBindingMode();
+      setDevicesInitialLoading(true);
+      loadDevicesTab(true);
     }
   }, [activeTab]);
 
@@ -192,27 +193,19 @@ function AdminDashboardContent() {
     }
   }
 
-  async function loadActiveSessions() {
+  async function loadDevicesTab(isInitial = false) {
     setSessionsLoading(true);
     try {
       const response = await fetch('/api/admin/sessions');
       if (response.ok) {
         const data = await response.json();
         setActiveSessions(data.sessions || []);
+        if (data.bindingMode) setGlobalBindingMode(data.bindingMode);
       }
     } finally {
       setSessionsLoading(false);
+      if (isInitial) setDevicesInitialLoading(false);
     }
-  }
-
-  async function loadGlobalBindingMode() {
-    try {
-      const response = await fetch('/api/admin/settings/device-binding');
-      if (response.ok) {
-        const data = await response.json();
-        setGlobalBindingMode(data.mode || 'per_user');
-      }
-    } catch { /* ignore */ }
   }
 
   async function handleSetGlobalBindingMode(mode: 'off' | 'per_user' | 'all') {
@@ -236,7 +229,7 @@ function AdminDashboardContent() {
     try {
       const response = await fetch(`/api/admin/sessions/${sessionId}`, { method: 'DELETE' });
       if (response.ok) {
-        loadActiveSessions();
+        loadDevicesTab();
       }
     } catch { /* ignore */ }
   }
@@ -1696,40 +1689,50 @@ function AdminDashboardContent() {
                   <p className="text-sm text-slate-500 mt-0.5">Override device binding setting for all students at once</p>
                 </div>
                 <div className="px-6 py-5">
-                  <div className="flex gap-3">
-                    {([
-                      { mode: 'off' as const, label: 'Off', desc: 'Disabled for everyone', color: 'slate' },
-                      { mode: 'per_user' as const, label: 'Per User', desc: 'Use each user\'s setting', color: 'blue' },
-                      { mode: 'all' as const, label: 'All Students', desc: 'Enabled for all students', color: 'emerald' },
-                    ] as const).map(({ mode, label, desc, color }) => {
-                      const isActive = globalBindingMode === mode;
-                      const colorMap = {
-                        slate: { active: 'bg-slate-700 text-white border-slate-700', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400' },
-                        blue: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-blue-400' },
-                        emerald: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-400' },
-                      };
-                      return (
-                        <button
-                          key={mode}
-                          disabled={bindingModeLoading}
-                          onClick={() => handleSetGlobalBindingMode(mode)}
-                          className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${isActive ? colorMap[color].active : colorMap[color].inactive} disabled:opacity-50`}
-                        >
-                          <div className="font-semibold">{label}</div>
-                          <div className={`text-xs mt-0.5 ${isActive ? 'opacity-80' : 'text-slate-400'}`}>{desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {globalBindingMode === 'all' && (
-                    <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-                      All students are restricted to one device. New logins will terminate other active sessions.
-                    </p>
-                  )}
-                  {globalBindingMode === 'off' && (
-                    <p className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-                      Device binding is completely disabled. Students can log in from any number of devices simultaneously.
-                    </p>
+                  {devicesInitialLoading ? (
+                    <div className="flex gap-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="flex-1 h-16 rounded-xl bg-slate-100 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-3">
+                        {([
+                          { mode: 'off' as const, label: 'Off', desc: 'Disabled for everyone', color: 'slate' },
+                          { mode: 'per_user' as const, label: 'Per User', desc: "Use each user's setting", color: 'blue' },
+                          { mode: 'all' as const, label: 'All Students', desc: 'Enabled for all students', color: 'emerald' },
+                        ] as const).map(({ mode, label, desc, color }) => {
+                          const isActive = globalBindingMode === mode;
+                          const colorMap = {
+                            slate: { active: 'bg-slate-700 text-white border-slate-700', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400' },
+                            blue: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-blue-400' },
+                            emerald: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-400' },
+                          };
+                          return (
+                            <button
+                              key={mode}
+                              disabled={bindingModeLoading}
+                              onClick={() => handleSetGlobalBindingMode(mode)}
+                              className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${isActive ? colorMap[color].active : colorMap[color].inactive} disabled:opacity-50`}
+                            >
+                              <div className="font-semibold">{label}</div>
+                              <div className={`text-xs mt-0.5 ${isActive ? 'opacity-80' : 'text-slate-400'}`}>{desc}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {globalBindingMode === 'all' && (
+                        <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                          All students are restricted to one device. New logins will terminate other active sessions.
+                        </p>
+                      )}
+                      {globalBindingMode === 'off' && (
+                        <p className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+                          Device binding is completely disabled. Students can log in from any number of devices simultaneously.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1760,7 +1763,7 @@ function AdminDashboardContent() {
                       ))}
                     </div>
                     <button
-                      onClick={loadActiveSessions}
+                      onClick={() => loadDevicesTab()}
                       disabled={sessionsLoading}
                       className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
                     >
@@ -1772,10 +1775,19 @@ function AdminDashboardContent() {
                   </div>
                 </div>
 
-                {sessionsLoading ? (
-                  <div className="px-6 py-12 text-center text-slate-400">
-                    <div className="w-8 h-8 border-2 border-slate-200 border-t-[#ff8240] rounded-full animate-spin mx-auto mb-3"></div>
-                    Loading sessions...
+                {sessionsLoading && activeSessions.length === 0 ? (
+                  <div className="divide-y divide-slate-100">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="px-6 py-4 flex items-center gap-4 animate-pulse">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3.5 bg-slate-100 rounded w-32" />
+                          <div className="h-3 bg-slate-100 rounded w-48" />
+                          <div className="h-3 bg-slate-100 rounded w-40" />
+                        </div>
+                        <div className="w-20 h-7 bg-slate-100 rounded-lg flex-shrink-0" />
+                      </div>
+                    ))}
                   </div>
                 ) : displaySessions.length === 0 ? (
                   <div className="px-6 py-12 text-center text-slate-400 text-sm">
