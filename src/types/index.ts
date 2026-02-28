@@ -66,6 +66,29 @@ export interface AuthResult {
   role?: 'admin' | 'student';
   error?: string;
   sessionToken?: string;
+  /** UUID of the user_sessions record created on login */
+  sessionId?: string;
+}
+
+// Active session record from user_sessions table
+export interface UserSession {
+  id: string;
+  user_id: string;
+  username?: string;
+  phone?: string;
+  device_id?: string;
+  device_info?: {
+    browser?: string;
+    os?: string;
+    screen?: string;
+    platform?: string;
+  };
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+  last_seen_at: string;
+  terminated_at?: string | null;
+  terminated_by?: string | null;
 }
 
 // Request to create a new card

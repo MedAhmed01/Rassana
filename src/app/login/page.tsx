@@ -6,38 +6,56 @@ import { useRouter, useSearchParams } from 'next/navigation';
 type LoginMode = 'cards' | 'lms';
 
 /**
- * Generate a unique device ID based on device characteristics (not browser-specific)
- * Uses screen resolution, timezone, and hardware info that stays consistent across browsers
+ * Generate a unique device ID based on device-level characteristics.
+ * Uses hardware info that stays consistent across browsers on the same device.
  */
 function getDeviceId(): string {
-  // Use device-level characteristics that are the same across all browsers on the same device
   const fingerprint = [
-    // Screen characteristics (same across browsers on same device)
     screen.width,
     screen.height,
     screen.colorDepth,
     screen.pixelDepth,
-    // Timezone (same across browsers)
     new Date().getTimezoneOffset(),
-    // Hardware concurrency (CPU cores - same across browsers)
     navigator.hardwareConcurrency || 0,
-    // Device memory (same across browsers, if available)
     (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0,
-    // Platform (OS - same across browsers)
     navigator.platform,
-    // Max touch points (same across browsers)
     navigator.maxTouchPoints || 0,
   ].join('|');
-  
-  // Create a hash of the fingerprint
+
   let hash = 0;
   for (let i = 0; i < fingerprint.length; i++) {
     const char = fingerprint.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  
+
   return 'dev_' + Math.abs(hash).toString(36);
+}
+
+/**
+ * Detect browser name for display in admin dashboard.
+ */
+function getBrowserName(): string {
+  const ua = navigator.userAgent;
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Edg/')) return 'Edge';
+  if (ua.includes('OPR/') || ua.includes('Opera')) return 'Opera';
+  if (ua.includes('Chrome')) return 'Chrome';
+  if (ua.includes('Safari')) return 'Safari';
+  return 'Unknown';
+}
+
+/**
+ * Detect OS name for display in admin dashboard.
+ */
+function getOsName(): string {
+  const ua = navigator.userAgent;
+  if (ua.includes('Windows NT')) return 'Windows';
+  if (ua.includes('Mac OS X')) return 'macOS';
+  if (ua.includes('Android')) return 'Android';
+  if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+  if (ua.includes('Linux')) return 'Linux';
+  return navigator.platform || 'Unknown';
 }
 
 function LoginForm() {
@@ -78,14 +96,20 @@ function LoginForm() {
     
     try {
       if (loginMode === 'cards') {
-        // Get device ID for device binding
+        // Get device ID and info for device binding and admin visibility
         const deviceId = getDeviceId();
-        
+        const deviceInfo = {
+          browser: getBrowserName(),
+          os: getOsName(),
+          screen: `${screen.width}x${screen.height}`,
+          platform: navigator.platform || '',
+        };
+
         // Card system login
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, deviceId }),
+          body: JSON.stringify({ username, password, deviceId, deviceInfo }),
         });
         
         const data = await response.json();

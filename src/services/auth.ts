@@ -1,9 +1,13 @@
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase';
+import { cookies } from 'next/headers';
 import type { AuthResult, SessionValidation, UserProfile } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Email domain used for username-based auth (Supabase requires email format)
 const EMAIL_DOMAIN = '@cardgame.local';
+
+// Cookie name for the app-level session ID (stored in user_sessions table)
+export const SESSION_COOKIE = 'app_session_id';
 
 /**
  * Convert username to email format for Supabase Auth
@@ -20,81 +24,110 @@ export function emailToUsername(email: string): string {
 }
 
 /**
- * Authenticate a user with username/phone and password
- * Checks credential expiration and enforces single session for students
- * Optionally enforces device binding if enabled for the student
+ * Get the active global device binding mode from system_settings.
+ * Returns 'off' | 'per_user' | 'all'
+ */
+async function getDeviceBindingMode(adminClient: ReturnType<typeof createAdminClient>): Promise<string> {
+  try {
+    const { data } = await adminClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'device_binding_mode')
+      .single();
+    return (data?.value as string) || 'per_user';
+  } catch {
+    return 'per_user';
+  }
+}
+
+/**
+ * Determine if device binding is active for a given user profile,
+ * taking the global mode into account.
+ */
+function isDeviceBindingActive(
+  globalMode: string,
+  userEnabled: boolean | undefined | null
+): boolean {
+  if (globalMode === 'all') return true;
+  if (globalMode === 'off') return false;
+  // 'per_user'
+  return userEnabled === true;
+}
+
+/**
+ * Authenticate a user with username/phone and password.
+ * Creates a tracked session record in user_sessions.
+ * Enforces single-device when device binding is active.
  */
 export async function authenticateUser(
   usernameOrPhone: string,
   password: string,
-  deviceId?: string
+  deviceId?: string,
+  deviceInfo?: {
+    browser?: string;
+    os?: string;
+    screen?: string;
+    platform?: string;
+    ip?: string;
+    userAgent?: string;
+  }
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const adminClient = createAdminClient();
-    
-    // Check if input looks like a phone number (starts with + or contains only digits)
+
+    // Check if input looks like a phone number
     const isPhone = /^[\d+][\d\s-]*$/.test(usernameOrPhone.trim());
-    
+
     let email: string;
-    let preCheckProfile: { 
-      user_id: string; 
-      username: string; 
-      role: string; 
-      expires_at: string; 
-      session_token?: string; 
-      last_login_at?: string;
+    let preCheckProfile: {
+      user_id: string;
+      username: string;
+      role: string;
+      expires_at: string;
       device_id?: string;
       device_binding_enabled?: boolean;
     } | null = null;
-    
+
     if (isPhone) {
-      // Look up profile by phone number
       const { data: profile } = await adminClient
         .from('user_profiles')
-        .select('user_id, username, role, expires_at, session_token, last_login_at, device_id, device_binding_enabled')
+        .select('user_id, username, role, expires_at, device_id, device_binding_enabled')
         .eq('phone', usernameOrPhone.trim())
         .single();
-      
+
       if (!profile) {
         return { success: false, error: 'Invalid phone number or password' };
       }
       email = usernameToEmail(profile.username);
       preCheckProfile = profile;
     } else {
-      // Look up profile by username
       const { data: profile } = await adminClient
         .from('user_profiles')
-        .select('user_id, username, role, expires_at, session_token, last_login_at, device_id, device_binding_enabled')
+        .select('user_id, username, role, expires_at, device_id, device_binding_enabled')
         .eq('username', usernameOrPhone.trim())
         .single();
-      
+
       email = usernameToEmail(usernameOrPhone);
       preCheckProfile = profile;
     }
-    
-    // Check for existing active session BEFORE authenticating (students only)
-    // Only enforce single-device restriction when device_binding_enabled is true
-    if (preCheckProfile && preCheckProfile.role === 'student' && preCheckProfile.device_binding_enabled) {
-      // Device binding is enabled - check if trying to login from a different device
-      if (preCheckProfile.device_id && deviceId && preCheckProfile.device_id !== deviceId) {
-        return { 
-          success: false, 
-          error: 'This account is locked to another device. Please contact an administrator to reset your device.' 
+
+    // Device binding pre-check (before Supabase auth to avoid unnecessary auth calls)
+    if (preCheckProfile && preCheckProfile.role === 'student') {
+      const globalMode = await getDeviceBindingMode(adminClient);
+      const bindingActive = isDeviceBindingActive(globalMode, preCheckProfile.device_binding_enabled);
+
+      if (bindingActive && preCheckProfile.device_id && deviceId && preCheckProfile.device_id !== deviceId) {
+        return {
+          success: false,
+          error: 'This account is locked to another device. Please contact an administrator to reset your device.',
         };
       }
     }
-    // When device_binding_enabled is false, allow login from any device without restrictions
-    
-    console.log('Attempting login with:', { usernameOrPhone, email, password: '***' });
-    
-    const { data, error } = await serverSupabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+
+    const { data, error } = await serverSupabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      console.error('Supabase auth error:', error);
       return { success: false, error: 'Invalid username/phone or password' };
     }
 
@@ -102,7 +135,6 @@ export async function authenticateUser(
       return { success: false, error: 'Authentication failed' };
     }
 
-    // Use admin client to check profile (bypasses RLS)
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('role, expires_at, device_binding_enabled, device_id')
@@ -110,47 +142,78 @@ export async function authenticateUser(
       .single();
 
     if (profileError || !profile) {
-      console.error('Profile not found for user:', data.user.id, profileError);
       await serverSupabase.auth.signOut();
       return { success: false, error: 'User profile not found' };
     }
 
-    // Check if credentials have expired
     const expiresAt = new Date(profile.expires_at);
     if (expiresAt < new Date()) {
       await serverSupabase.auth.signOut();
-      return { 
-        success: false, 
-        error: 'Your credentials have expired. Please contact an administrator.' 
-      };
+      return { success: false, error: 'Your credentials have expired. Please contact an administrator.' };
     }
 
-    // Generate new session token and update profile
-    let sessionToken: string | undefined;
+    const globalMode = await getDeviceBindingMode(adminClient);
+    const bindingActive = profile.role === 'student' &&
+      isDeviceBindingActive(globalMode, profile.device_binding_enabled);
+
+    // Update profile: session_token (legacy compat), last_login_at, bind device if first login
+    const sessionToken = uuidv4();
     try {
-      sessionToken = uuidv4();
-      const updateData: Record<string, unknown> = { 
+      const updateData: Record<string, unknown> = {
         session_token: sessionToken,
         last_login_at: new Date().toISOString(),
       };
-
-      // Bind device if device binding is enabled and no device is bound yet
-      if (profile.device_binding_enabled && deviceId && !profile.device_id) {
+      // Bind device fingerprint on first login when binding is active
+      if (bindingActive && deviceId && !profile.device_id) {
         updateData.device_id = deviceId;
         updateData.device_bound_at = new Date().toISOString();
       }
-
-      const { error: updateError } = await adminClient
+      await adminClient
         .from('user_profiles')
         .update(updateData)
         .eq('user_id', data.user.id);
-      
-      if (updateError) {
-        console.error('Failed to update session token:', updateError);
-        sessionToken = undefined;
+    } catch {
+      // Non-fatal — session_token columns may not exist in older schemas
+    }
+
+    // Create a tracked session record
+    let sessionId: string | undefined;
+    try {
+      const { data: sessionRecord, error: sessionError } = await adminClient
+        .from('user_sessions')
+        .insert({
+          user_id: data.user.id,
+          device_id: deviceId || null,
+          device_info: deviceInfo ? {
+            browser: deviceInfo.browser || null,
+            os: deviceInfo.os || null,
+            screen: deviceInfo.screen || null,
+            platform: deviceInfo.platform || null,
+          } : {},
+          ip_address: deviceInfo?.ip || null,
+          user_agent: deviceInfo?.userAgent || null,
+        })
+        .select('id')
+        .single();
+
+      if (!sessionError && sessionRecord) {
+        sessionId = sessionRecord.id;
+
+        // Terminate all OTHER active sessions for this user when binding is active
+        if (bindingActive) {
+          await adminClient
+            .from('user_sessions')
+            .update({
+              terminated_at: new Date().toISOString(),
+              terminated_by: 'system',
+            })
+            .eq('user_id', data.user.id)
+            .neq('id', sessionId)
+            .is('terminated_at', null);
+        }
       }
-    } catch (e) {
-      console.log('Session columns may not exist yet:', e);
+    } catch {
+      // user_sessions table may not exist yet (before migration runs)
     }
 
     return {
@@ -166,6 +229,7 @@ export async function authenticateUser(
       },
       role: profile.role as 'admin' | 'student',
       sessionToken,
+      sessionId,
     };
   } catch (err) {
     console.error('Auth error:', err);
@@ -174,53 +238,66 @@ export async function authenticateUser(
 }
 
 /**
- * Log out the current user and clear session token
+ * Log out the current user.
+ * Terminates the tracked session record and clears Supabase auth.
  */
 export async function logout(): Promise<{ success: boolean; error?: string }> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const adminClient = createAdminClient();
-    
-    // Get current user
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+
     const { data: { user } } = await serverSupabase.auth.getUser();
-    
-    // Clear session token in profile
+
     if (user) {
+      // Clear legacy session_token
       await adminClient
         .from('user_profiles')
         .update({ session_token: null })
         .eq('user_id', user.id);
+
+      // Terminate the tracked session if we have its ID
+      if (sessionId) {
+        try {
+          await adminClient
+            .from('user_sessions')
+            .update({
+              terminated_at: new Date().toISOString(),
+              terminated_by: 'user',
+            })
+            .eq('id', sessionId)
+            .eq('user_id', user.id)
+            .is('terminated_at', null);
+        } catch {
+          // user_sessions may not exist yet
+        }
+      }
     }
-    
+
     const { error } = await serverSupabase.auth.signOut();
-    
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    
+    if (error) return { success: false, error: error.message };
     return { success: true };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Logout failed' };
   }
 }
 
 /**
- * Validate the current session and check credential expiration
- * Also checks for force logout
+ * Validate the current session.
+ * Uses the app_session_id cookie to look up the session in user_sessions.
+ * Falls back to the legacy session_token check when the table/cookie isn't available.
  */
 export async function validateSession(): Promise<SessionValidation> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const adminClient = createAdminClient();
-    
-    // Get user - this is required first
-    const { data: { user }, error } = await serverSupabase.auth.getUser();
 
+    const { data: { user }, error } = await serverSupabase.auth.getUser();
     if (error || !user) {
       return { valid: false, reason: 'no_session' };
     }
 
-    // Get all profile data in a single query
     const { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('role, expires_at, session_token, force_logout_at, last_login_at, device_binding_enabled')
@@ -231,27 +308,50 @@ export async function validateSession(): Promise<SessionValidation> {
       return { valid: false, reason: 'profile_not_found' };
     }
 
-    // Check if credentials have expired
     const expiresAt = new Date(profile.expires_at);
     if (expiresAt < new Date()) {
       await serverSupabase.auth.signOut();
       return { valid: false, reason: 'expired' };
     }
 
-    // Check session validity for students - only when device binding is enabled
-    if (profile.role === 'student' && profile.device_binding_enabled) {
-      // Check if user was force logged out
+    // Try the new session tracking first
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+
+    if (sessionId) {
+      try {
+        const { data: sessionRecord } = await adminClient
+          .from('user_sessions')
+          .select('id, terminated_at')
+          .eq('id', sessionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!sessionRecord || sessionRecord.terminated_at !== null) {
+          // Session was terminated by admin or by a new login (device binding)
+          await serverSupabase.auth.signOut();
+          return { valid: false, reason: 'session_invalidated' };
+        }
+
+        // Update heartbeat
+        await adminClient
+          .from('user_sessions')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', sessionId);
+      } catch {
+        // user_sessions table may not exist yet — fall through to legacy check
+      }
+    } else if (profile.role === 'student' && profile.device_binding_enabled) {
+      // Legacy: no session cookie yet, fall back to old checks
       if (profile.force_logout_at && profile.last_login_at) {
         const forceLogoutAt = new Date(profile.force_logout_at);
         const lastLoginAt = new Date(profile.last_login_at);
-        
         if (forceLogoutAt > lastLoginAt) {
           await serverSupabase.auth.signOut();
           return { valid: false, reason: 'force_logout' };
         }
       }
 
-      // Check if session token was cleared (only when device binding is enabled)
       if (!profile.session_token) {
         await serverSupabase.auth.signOut();
         return { valid: false, reason: 'session_invalidated' };
@@ -276,13 +376,9 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const adminClient = createAdminClient();
-    
-    // Get user
+
     const { data: { user } } = await serverSupabase.auth.getUser();
-    
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     const { data: profile, error } = await adminClient
       .from('user_profiles')
@@ -290,30 +386,23 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       .eq('user_id', user.id)
       .single();
 
-    if (error || !profile) {
-      return null;
-    }
-
+    if (error || !profile) return null;
     return profile as UserProfile;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
 /**
  * Check if the current user has admin role and get their profile in one call
- * More efficient than calling isAdmin() and getCurrentUserProfile() separately
  */
 export async function getAdminProfile(): Promise<{ isAdmin: boolean; profile: UserProfile | null }> {
   try {
     const serverSupabase = await createServerSupabaseClient();
     const adminClient = createAdminClient();
-    
+
     const { data: { user } } = await serverSupabase.auth.getUser();
-    
-    if (!user) {
-      return { isAdmin: false, profile: null };
-    }
+    if (!user) return { isAdmin: false, profile: null };
 
     const { data: profile, error } = await adminClient
       .from('user_profiles')
@@ -321,21 +410,16 @@ export async function getAdminProfile(): Promise<{ isAdmin: boolean; profile: Us
       .eq('user_id', user.id)
       .single();
 
-    if (error || !profile) {
-      return { isAdmin: false, profile: null };
-    }
+    if (error || !profile) return { isAdmin: false, profile: null };
 
-    // Check expiration
     const expiresAt = new Date(profile.expires_at);
-    if (expiresAt < new Date()) {
-      return { isAdmin: false, profile: null };
-    }
+    if (expiresAt < new Date()) return { isAdmin: false, profile: null };
 
-    return { 
-      isAdmin: profile.role === 'admin', 
-      profile: profile as UserProfile 
+    return {
+      isAdmin: profile.role === 'admin',
+      profile: profile as UserProfile,
     };
-  } catch (err) {
+  } catch {
     return { isAdmin: false, profile: null };
   }
 }
@@ -349,34 +433,71 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 /**
- * Force logout a user (admin only)
+ * Force logout a user (admin only).
+ * Terminates all active sessions and clears legacy session_token.
  */
 export async function forceLogoutUser(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const adminClient = createAdminClient();
-    
-    // Update force_logout_at and clear session_token
+
+    // Terminate all tracked sessions for this user
+    try {
+      await adminClient
+        .from('user_sessions')
+        .update({
+          terminated_at: new Date().toISOString(),
+          terminated_by: 'admin',
+        })
+        .eq('user_id', userId)
+        .is('terminated_at', null);
+    } catch {
+      // user_sessions may not exist yet
+    }
+
+    // Legacy: clear session_token and set force_logout_at
     const { error } = await adminClient
       .from('user_profiles')
-      .update({ 
+      .update({
         force_logout_at: new Date().toISOString(),
         session_token: null,
       })
       .eq('user_id', userId);
-    
+
     if (error) {
       return { success: false, error: error.message };
     }
-    
-    // Also try to sign out all sessions via Supabase Admin API
+
+    // Try Supabase admin sign-out
     try {
       await adminClient.auth.admin.signOut(userId, 'global');
-    } catch (e) {
-      console.log('Could not sign out via admin API:', e);
+    } catch {
+      // Non-fatal — Supabase admin API may not support this
     }
-    
+
     return { success: true };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Force logout failed' };
+  }
+}
+
+/**
+ * Terminate a specific session by ID (admin only).
+ */
+export async function terminateSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
+      .from('user_sessions')
+      .update({
+        terminated_at: new Date().toISOString(),
+        terminated_by: 'admin',
+      })
+      .eq('id', sessionId)
+      .is('terminated_at', null);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Failed to terminate session' };
   }
 }

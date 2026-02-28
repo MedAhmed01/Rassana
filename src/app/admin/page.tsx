@@ -28,6 +28,20 @@ interface Card {
   required_subscriptions?: string[];
 }
 
+interface ActiveSession {
+  id: string;
+  user_id: string;
+  username: string;
+  phone?: string;
+  device_id?: string;
+  device_binding_enabled?: boolean;
+  device_info?: { browser?: string; os?: string; screen?: string; platform?: string };
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+  last_seen_at: string;
+}
+
 interface AccessLog {
   id: string;
   user_id: string;
@@ -39,7 +53,7 @@ interface AccessLog {
 
 function AdminDashboardContent() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs' | 'lms' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'cards' | 'logs' | 'lms' | 'settings' | 'devices'>('users');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -71,6 +85,13 @@ function AdminDashboardContent() {
   const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
   const [newCategory, setNewCategory] = useState({ label: '', color: 'slate' });
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<string | null>(null);
+
+  // Devices tab state
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [globalBindingMode, setGlobalBindingMode] = useState<'off' | 'per_user' | 'all'>('per_user');
+  const [bindingModeLoading, setBindingModeLoading] = useState(false);
+  const [deviceFilter, setDeviceFilter] = useState<'all' | 'multi'>('all');
 
   const availableSubscriptions = categories.filter(c => !c.hidden).map(c => c.id);
   const subscriptionLabels: Record<string, string> = Object.fromEntries(
@@ -119,6 +140,14 @@ function AdminDashboardContent() {
     });
   }, [cards]);
 
+  // Load devices data when switching to devices tab
+  useEffect(() => {
+    if (activeTab === 'devices') {
+      loadActiveSessions();
+      loadGlobalBindingMode();
+    }
+  }, [activeTab]);
+
   async function checkAuth() {
     try {
       const response = await fetch('/api/auth/session');
@@ -161,6 +190,55 @@ function AdminDashboardContent() {
       const data = await response.json();
       setCategories(data.categories || []);
     }
+  }
+
+  async function loadActiveSessions() {
+    setSessionsLoading(true);
+    try {
+      const response = await fetch('/api/admin/sessions');
+      if (response.ok) {
+        const data = await response.json();
+        setActiveSessions(data.sessions || []);
+      }
+    } finally {
+      setSessionsLoading(false);
+    }
+  }
+
+  async function loadGlobalBindingMode() {
+    try {
+      const response = await fetch('/api/admin/settings/device-binding');
+      if (response.ok) {
+        const data = await response.json();
+        setGlobalBindingMode(data.mode || 'per_user');
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleSetGlobalBindingMode(mode: 'off' | 'per_user' | 'all') {
+    setBindingModeLoading(true);
+    try {
+      const response = await fetch('/api/admin/settings/device-binding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      if (response.ok) {
+        setGlobalBindingMode(mode);
+      }
+    } finally {
+      setBindingModeLoading(false);
+    }
+  }
+
+  async function handleTerminateSession(sessionId: string) {
+    if (!confirm('Disconnect this session? The user will be logged out on their next action.')) return;
+    try {
+      const response = await fetch(`/api/admin/sessions/${sessionId}`, { method: 'DELETE' });
+      if (response.ok) {
+        loadActiveSessions();
+      }
+    } catch { /* ignore */ }
   }
 
   async function loadLogs() {
@@ -468,6 +546,7 @@ function AdminDashboardContent() {
     { id: 'cards' as const, label: 'Cards', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
     { id: 'logs' as const, label: 'Logs', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
     { id: 'lms' as const, label: 'Rassa LMS', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+    { id: 'devices' as const, label: 'Devices', icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' },
     { id: 'settings' as const, label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
   ];
 
@@ -1567,6 +1646,233 @@ function AdminDashboardContent() {
 
         {/* Rassa LMS Tab */}
         {activeTab === 'lms' && <RassaLMSTab />}
+
+        {/* Devices Tab */}
+        {activeTab === 'devices' && (() => {
+          // Compute stats
+          const userSessionCount: Record<string, number> = {};
+          activeSessions.forEach(s => {
+            userSessionCount[s.user_id] = (userSessionCount[s.user_id] || 0) + 1;
+          });
+          const multiDeviceUserIds = new Set(
+            Object.entries(userSessionCount)
+              .filter(([, count]) => count > 1)
+              .map(([uid]) => uid)
+          );
+          const displaySessions = deviceFilter === 'multi'
+            ? activeSessions.filter(s => multiDeviceUserIds.has(s.user_id))
+            : activeSessions;
+
+          return (
+            <div className="space-y-6">
+              {/* Header */}
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Devices & Sessions</h2>
+                <p className="text-slate-500 text-sm mt-1">Monitor active sessions and control device binding globally</p>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <p className="text-sm text-slate-500">Active Sessions</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-1">{activeSessions.length}</p>
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <p className="text-sm text-slate-500">Users Online</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-1">{Object.keys(userSessionCount).length}</p>
+                </div>
+                <div className={`rounded-2xl border shadow-sm p-5 ${multiDeviceUserIds.size > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`}>
+                  <p className="text-sm text-slate-500">Multi-Device Users</p>
+                  <p className={`text-3xl font-bold mt-1 ${multiDeviceUserIds.size > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                    {multiDeviceUserIds.size}
+                  </p>
+                </div>
+              </div>
+
+              {/* Global Device Binding */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-100">
+                  <h3 className="text-lg font-semibold text-slate-900">Global Device Binding Mode</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Override device binding setting for all students at once</p>
+                </div>
+                <div className="px-6 py-5">
+                  <div className="flex gap-3">
+                    {([
+                      { mode: 'off' as const, label: 'Off', desc: 'Disabled for everyone', color: 'slate' },
+                      { mode: 'per_user' as const, label: 'Per User', desc: 'Use each user\'s setting', color: 'blue' },
+                      { mode: 'all' as const, label: 'All Students', desc: 'Enabled for all students', color: 'emerald' },
+                    ] as const).map(({ mode, label, desc, color }) => {
+                      const isActive = globalBindingMode === mode;
+                      const colorMap = {
+                        slate: { active: 'bg-slate-700 text-white border-slate-700', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400' },
+                        blue: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-blue-400' },
+                        emerald: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-400' },
+                      };
+                      return (
+                        <button
+                          key={mode}
+                          disabled={bindingModeLoading}
+                          onClick={() => handleSetGlobalBindingMode(mode)}
+                          className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${isActive ? colorMap[color].active : colorMap[color].inactive} disabled:opacity-50`}
+                        >
+                          <div className="font-semibold">{label}</div>
+                          <div className={`text-xs mt-0.5 ${isActive ? 'opacity-80' : 'text-slate-400'}`}>{desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {globalBindingMode === 'all' && (
+                    <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                      All students are restricted to one device. New logins will terminate other active sessions.
+                    </p>
+                  )}
+                  {globalBindingMode === 'off' && (
+                    <p className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+                      Device binding is completely disabled. Students can log in from any number of devices simultaneously.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Sessions List */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Active Sessions</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">All currently connected users</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex bg-slate-100 rounded-lg p-1 gap-1">
+                      {([
+                        { key: 'all' as const, label: 'All' },
+                        { key: 'multi' as const, label: 'Multi-Device' },
+                      ] as const).map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setDeviceFilter(key)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${deviceFilter === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          {label}
+                          {key === 'multi' && multiDeviceUserIds.size > 0 && (
+                            <span className="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{multiDeviceUserIds.size}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={loadActiveSessions}
+                      disabled={sessionsLoading}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <svg className={`w-3.5 h-3.5 ${sessionsLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                {sessionsLoading ? (
+                  <div className="px-6 py-12 text-center text-slate-400">
+                    <div className="w-8 h-8 border-2 border-slate-200 border-t-[#ff8240] rounded-full animate-spin mx-auto mb-3"></div>
+                    Loading sessions...
+                  </div>
+                ) : displaySessions.length === 0 ? (
+                  <div className="px-6 py-12 text-center text-slate-400 text-sm">
+                    {deviceFilter === 'multi' ? 'No users connected from multiple devices.' : 'No active sessions found.'}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {displaySessions.map(session => {
+                      const isMulti = multiDeviceUserIds.has(session.user_id);
+                      const lastSeen = new Date(session.last_seen_at);
+                      const now = new Date();
+                      const diffMin = Math.floor((now.getTime() - lastSeen.getTime()) / 60000);
+                      const lastSeenLabel = diffMin < 1 ? 'Just now' : diffMin < 60 ? `${diffMin}m ago` : `${Math.floor(diffMin / 60)}h ago`;
+                      const createdAt = new Date(session.created_at).toLocaleString();
+
+                      return (
+                        <div key={session.id} className={`px-6 py-4 flex items-start gap-4 ${isMulti ? 'bg-red-50/50' : ''}`}>
+                          {/* User avatar / multi-device indicator */}
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold ${isMulti ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                            {session.username?.[0]?.toUpperCase() || '?'}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            {/* Row 1: username + badges */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-900 text-sm">{session.username}</span>
+                              {session.phone && (
+                                <span className="text-xs text-slate-400">{session.phone}</span>
+                              )}
+                              {isMulti && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                  </svg>
+                                  Multi-device ({userSessionCount[session.user_id]})
+                                </span>
+                              )}
+                              {session.device_binding_enabled && (
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">Device Locked</span>
+                              )}
+                            </div>
+
+                            {/* Row 2: device info */}
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-slate-500">
+                              {(session.device_info?.browser || session.device_info?.os) && (
+                                <span className="flex items-center gap-1">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                  {[session.device_info?.browser, session.device_info?.os].filter(Boolean).join(' / ')}
+                                </span>
+                              )}
+                              {session.device_info?.screen && (
+                                <span>{session.device_info.screen}</span>
+                              )}
+                              {session.ip_address && session.ip_address !== 'unknown' && (
+                                <span className="flex items-center gap-1">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                  </svg>
+                                  {session.ip_address}
+                                </span>
+                              )}
+                              {session.device_id && (
+                                <span className="font-mono text-slate-400" title="Device fingerprint">{session.device_id}</span>
+                              )}
+                            </div>
+
+                            {/* Row 3: timing */}
+                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                              <span>Logged in: {createdAt}</span>
+                              <span>Last seen: {lastSeenLabel}</span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleTerminateSession(session.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-lg transition-colors"
+                              title="Disconnect this session"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                              Disconnect
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
