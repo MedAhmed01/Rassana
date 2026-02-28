@@ -42,6 +42,17 @@ interface ActiveSession {
   last_seen_at: string;
 }
 
+interface AllStudentUser {
+  user_id: string;
+  username: string;
+  phone?: string | null;
+  device_id?: string | null;
+  device_binding_enabled: boolean;
+  last_login_at?: string | null;
+  expires_at: string;
+  active_session_count: number;
+}
+
 interface AccessLog {
   id: string;
   user_id: string;
@@ -88,11 +99,13 @@ function AdminDashboardContent() {
 
   // Devices tab state
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
+  const [allStudents, setAllStudents] = useState<AllStudentUser[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [devicesInitialLoading, setDevicesInitialLoading] = useState(true);
   const [globalBindingMode, setGlobalBindingMode] = useState<'off' | 'per_user' | 'all'>('per_user');
   const [bindingModeLoading, setBindingModeLoading] = useState(false);
   const [deviceFilter, setDeviceFilter] = useState<'all' | 'multi'>('all');
+  const [studentsSearch, setStudentsSearch] = useState('');
 
   const availableSubscriptions = categories.filter(c => !c.hidden).map(c => c.id);
   const subscriptionLabels: Record<string, string> = Object.fromEntries(
@@ -203,6 +216,7 @@ function AdminDashboardContent() {
       if (response.ok) {
         const data = await response.json();
         setActiveSessions(data.sessions || []);
+        setAllStudents(data.allStudents || []);
         if (data.bindingMode) setGlobalBindingMode(data.bindingMode);
       }
     } finally {
@@ -237,6 +251,16 @@ function AdminDashboardContent() {
     if (!confirm('Disconnect this session? The user will be logged out on their next action.')) return;
     try {
       const response = await fetch(`/api/admin/sessions/${sessionId}`, { method: 'DELETE' });
+      if (response.ok) {
+        loadDevicesTab();
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleForceLogoutUser(userId: string, username: string) {
+    if (!confirm(`Force logout ${username}? All their active sessions will be terminated immediately.`)) return;
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/force-logout`, { method: 'POST' });
       if (response.ok) {
         loadDevicesTab();
       }
@@ -1891,6 +1915,137 @@ function AdminDashboardContent() {
                   </div>
                 )}
               </div>
+
+              {/* All Students */}
+              {(() => {
+                const q = studentsSearch.toLowerCase();
+                const filtered = allStudents.filter(u =>
+                  !q || u.username.toLowerCase().includes(q) || (u.phone || '').includes(q)
+                );
+                return (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">All Students</h3>
+                        <p className="text-sm text-slate-500 mt-0.5">Every student account — including those not yet tracked by the new system</p>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search username or phone…"
+                        value={studentsSearch}
+                        onChange={e => setStudentsSearch(e.target.value)}
+                        className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
+                      />
+                    </div>
+
+                    {devicesInitialLoading ? (
+                      <div className="divide-y divide-slate-100">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="px-6 py-4 flex items-center gap-4 animate-pulse">
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
+                            <div className="flex-1 space-y-2">
+                              <div className="h-3.5 bg-slate-100 rounded w-32" />
+                              <div className="h-3 bg-slate-100 rounded w-48" />
+                            </div>
+                            <div className="w-20 h-7 bg-slate-100 rounded-lg flex-shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : filtered.length === 0 ? (
+                      <div className="px-6 py-10 text-center text-slate-400 text-sm">
+                        {studentsSearch ? 'No students match your search.' : 'No student accounts found.'}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-100">
+                        {filtered.map(student => {
+                          const isOnline = student.active_session_count > 0;
+                          const isMulti = student.active_session_count > 1;
+                          const expired = new Date(student.expires_at) < new Date();
+                          const lastLogin = student.last_login_at
+                            ? (() => {
+                                const d = new Date(student.last_login_at);
+                                const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+                                if (diffMin < 1) return 'Just now';
+                                if (diffMin < 60) return `${diffMin}m ago`;
+                                if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h ago`;
+                                return d.toLocaleDateString();
+                              })()
+                            : 'Never';
+
+                          return (
+                            <div key={student.user_id} className={`px-6 py-4 flex items-start gap-4 ${isMulti ? 'bg-red-50/40' : ''}`}>
+                              {/* Avatar */}
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold ${isMulti ? 'bg-red-100 text-red-600' : isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                {student.username?.[0]?.toUpperCase() || '?'}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                {/* Row 1: name + status badges */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-slate-900 text-sm">{student.username}</span>
+                                  {student.phone && <span className="text-xs text-slate-400">{student.phone}</span>}
+
+                                  {isMulti ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                      </svg>
+                                      {student.active_session_count} devices
+                                    </span>
+                                  ) : isOnline ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                                      Online
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-medium rounded-full">Offline</span>
+                                  )}
+
+                                  {expired && (
+                                    <span className="px-2 py-0.5 bg-red-50 text-red-600 text-xs font-medium rounded-full">Expired</span>
+                                  )}
+                                  {student.device_binding_enabled && (
+                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full">Device Locked</span>
+                                  )}
+                                </div>
+
+                                {/* Row 2: device + last login */}
+                                <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-slate-500">
+                                  {student.device_id ? (
+                                    <span className="flex items-center gap-1">
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="font-mono text-slate-400" title="Bound device fingerprint">{student.device_id.slice(0, 16)}…</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-300 italic">No device bound</span>
+                                  )}
+                                  <span>Last login: {lastLogin}</span>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              {isOnline && (
+                                <button
+                                  onClick={() => handleForceLogoutUser(student.user_id, student.username)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+                                  title="Force logout all sessions"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                  </svg>
+                                  Force Logout
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
