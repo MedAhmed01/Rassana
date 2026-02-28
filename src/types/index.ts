@@ -68,6 +68,11 @@ export interface AuthResult {
   sessionToken?: string;
   /** UUID of the user_sessions record created on login */
   sessionId?: string;
+  /**
+   * True when login was blocked because the account is already active on
+   * another device. The client should offer a self-service disconnect option.
+   */
+  multiDeviceConflict?: boolean;
 }
 
 // Active session record from user_sessions table

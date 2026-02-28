@@ -72,7 +72,8 @@ export async function authenticateUser(
     platform?: string;
     ip?: string;
     userAgent?: string;
-  }
+  },
+  forceDisconnect?: boolean
 ): Promise<AuthResult> {
   try {
     const serverSupabase = await createServerSupabaseClient();
@@ -119,11 +120,41 @@ export async function authenticateUser(
       const globalMode = await getDeviceBindingMode(adminClient);
       const bindingActive = isDeviceBindingActive(globalMode, preCheckProfile.device_binding_enabled);
 
-      if (bindingActive && preCheckProfile.device_id && deviceId && preCheckProfile.device_id !== deviceId) {
-        return {
-          success: false,
-          error: 'This account is locked to another device. Please contact an administrator to reset your device.',
-        };
+      if (bindingActive && !forceDisconnect) {
+        if (globalMode === 'all') {
+          // In 'all' mode: block if there is ANY active session from a different device.
+          // The student must contact admin or use self-service disconnect.
+          try {
+            const { data: activeSessions } = await adminClient
+              .from('user_sessions')
+              .select('id, device_id')
+              .eq('user_id', preCheckProfile.user_id)
+              .is('terminated_at', null);
+
+            const hasOtherDevice = activeSessions?.some(
+              s => deviceId && s.device_id && s.device_id !== deviceId
+            );
+
+            if (hasOtherDevice) {
+              return {
+                success: false,
+                error: 'You are already connected from another device.',
+                multiDeviceConflict: true,
+              };
+            }
+          } catch {
+            // user_sessions table not yet created — fall through
+          }
+        } else {
+          // per_user mode: block by stored device fingerprint
+          if (preCheckProfile.device_id && deviceId && preCheckProfile.device_id !== deviceId) {
+            return {
+              success: false,
+              error: 'This account is locked to another device. Please contact an administrator to reset your device.',
+              multiDeviceConflict: true,
+            };
+          }
+        }
       }
     }
 

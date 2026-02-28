@@ -4,7 +4,7 @@ import { authenticateUser, SESSION_COOKIE } from '@/services/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password, deviceId, deviceInfo } = body;
+    const { username, password, deviceId, deviceInfo, forceDisconnect } = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
       ...deviceInfo,
       ip,
       userAgent,
-    });
+    }, forceDisconnect === true);
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error },
+        { error: result.error, multiDeviceConflict: result.multiDeviceConflict ?? false },
         { status: 401 }
       );
     }
