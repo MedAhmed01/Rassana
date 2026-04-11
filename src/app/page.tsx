@@ -12,6 +12,13 @@ interface UserData {
   expires_at: string;
 }
 
+interface Packet {
+  id: string;
+  title: string;
+  thumbnail_url?: string;
+  card_count: number;
+}
+
 interface ContinueWatchingData {
   card_id: string;
   card_title?: string;
@@ -69,6 +76,7 @@ function HomeContent() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [continueWatching, setContinueWatching] = useState<ContinueWatchingData | null>(null);
   const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
+  const [packets, setPackets] = useState<Packet[]>([]);
   
   // Video Player Modal State
   const [showPlayer, setShowPlayer] = useState(false);
@@ -287,11 +295,15 @@ function HomeContent() {
             });
             setLoading(false);
             loadContinueWatching();
-            // Load categories for dynamic label/color display
+            // Load categories and packets in parallel
             fetch('/api/admin/categories')
               .then(r => r.ok ? r.json() : null)
               .then(d => { if (d?.categories) setCategories(d.categories); })
-              .catch(() => {/* use empty fallback */});
+              .catch(() => {});
+            fetch('/api/student/packets')
+              .then(r => r.ok ? r.json() : null)
+              .then(d => { if (d?.packets) setPackets(d.packets); })
+              .catch(() => {});
           }
         } else {
           router.push('/login');
@@ -436,6 +448,68 @@ function HomeContent() {
                 )}
               </div>
             </div>
+
+            {/* Online Cards — show packets inline if subscribed, otherwise shortcut button */}
+            {packets.length > 0 ? (
+              <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden">
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                  <h2 className="text-white font-semibold flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#ff8240]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Online Cards
+                  </h2>
+                  <button
+                    onClick={() => router.push('/my-cards')}
+                    className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    See all →
+                  </button>
+                </div>
+                <div className="px-5 pb-5 grid grid-cols-3 gap-3">
+                  {packets.slice(0, 6).map((packet) => (
+                    <button
+                      key={packet.id}
+                      onClick={() => router.push(`/my-cards/${packet.id}`)}
+                      className="group relative rounded-xl overflow-hidden border border-white/10 bg-black focus:outline-none"
+                      style={{ aspectRatio: '9/16' }}
+                    >
+                      {packet.thumbnail_url ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={packet.thumbnail_url} alt={packet.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900" />
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 px-2 py-2">
+                        <p className="text-white text-[10px] font-semibold leading-tight truncate drop-shadow">{packet.title}</p>
+                        <p className="text-white/40 text-[9px]">{packet.card_count} cards</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => router.push('/my-cards')}
+                className="w-full flex items-center gap-4 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 px-5 py-4 hover:bg-white/10 transition-colors text-left"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-[#ff8240] to-[#00f99d] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm">Online Cards</p>
+                  <p className="text-white/50 text-xs mt-0.5">Browse &amp; flip your card packets</p>
+                </div>
+                <svg className="w-4 h-4 text-white/30 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
 
             {/* Continue Watching Card */}
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden">

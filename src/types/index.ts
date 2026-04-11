@@ -10,6 +10,33 @@ export interface SubscriptionCategory {
   created_at: string;
 }
 
+// ── Online Cards feature ──────────────────────────────────────────────────────
+
+export interface OnlinePacket {
+  id: string;
+  title: string;
+  thumbnail_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnlineCard {
+  id: string;
+  packet_id: string;
+  title: string;
+  image_url?: string;
+  youtube_url: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface OnlinePacketSubscription {
+  id: string;
+  user_id: string;
+  packet_id: string;
+  created_at: string;
+}
+
 // Card type - Maps card identifiers to YouTube video URLs
 export interface Card {
   id: string;
